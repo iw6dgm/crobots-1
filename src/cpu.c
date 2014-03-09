@@ -12,8 +12,12 @@
 /* cpu.c - the routines to execute crobot instructions */
 
 #include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
 #include "crobots.h"
 #include "tokens.h"
+
+
 
 /* push - basic stack push mechanism */
 /*         depends on cur_robot, set r_flag on overflow */
@@ -54,7 +58,7 @@ long pop()
 /* any errors (stack collision, missing functions, etc) cause the 'main' */
 /* function to be restarted, with a clean stack; signal by r_flag = 1 */
 
-cycle()
+void cycle()
 {
   int j;
   int c;
@@ -274,6 +278,7 @@ cycle()
 
   /* check for execution failure: stack corruption, etc */
   if (r_flag) {
+    if(ndebug) warn();
     robot_go(cur_robot);	/* restart the 'main' function */
     r_flag = 0;
   }
@@ -325,7 +330,7 @@ cycle()
 /* binaryop - pops 2 operands, performs operation, pushes result */
 /*            divide by zero handled by returning 0 */
 
-binaryop(op)
+void binaryop(op)
 
 int op;
 {
@@ -485,7 +490,7 @@ int op;
 
 /* robot_go - start the robot pointed to by r */
 
-robot_go(r)
+void robot_go(r)
 
 struct robot *r;
 {
@@ -510,7 +515,7 @@ struct robot *r;
 
 /* dumpvar - dump a variable pool or stack for length size */
 
-dumpvar(pool,size)
+void dumpvar(pool,size)
 
 long *pool;
 int size;
@@ -522,5 +527,7 @@ int size;
       printf("\n");
     printf("%8ld: %8ld\t",(long)(pool + i),*(pool + i));
   }
+
 }
+
 

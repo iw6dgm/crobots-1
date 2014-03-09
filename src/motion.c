@@ -20,6 +20,7 @@
 
 /* sine and cosine lookup table, times 100,000 */
 /* to bypass floating point transcendentals, for speed */
+extern int UPDATE_CYCLES;
 
 long trig_tbl[91] = {
          0L,
@@ -136,6 +137,7 @@ int deg;
     return (-(trig_tbl[deg-180]));
 
   if (deg < 361)
+
     return (-(trig_tbl[90-(deg-270)]));
 
   return (0L);   /* should be unreachable */
@@ -182,7 +184,7 @@ struct {
 /* move_robots - update the postion of all robots */
 /*               parm 'displ' controls call to field display */
 
-move_robots(displ)
+void move_robots(displ)
 int displ;
 {
   register int i, n;
@@ -293,7 +295,7 @@ int displ;
 /* move_miss - updates all missile positions */
 /*             parm 'displ' control display */
 
-move_miss(displ)
+void move_miss(displ)
 int displ;
 {
   register int r, i;

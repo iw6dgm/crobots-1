@@ -15,6 +15,12 @@
 #include "crobots.h"
 #include <curses.h>
 
+#ifdef UNIX  /* anche se e' ovvio...*/
+int LINEE=21;
+#endif
+
+extern long ritardo;
+
 /* playfield characters */
 #define UL_CORN '+'
 #define UR_CORN '+'
@@ -50,6 +56,7 @@ struct {
 
 #define STAT_WID 20   /* width of characters for status boxes */
 
+
 static int f_width;  /* play field width */
 static int f_height; /* play field height */
 
@@ -60,20 +67,22 @@ static int col_3;    /* column for cpu cycle count*/
 
 /* init_disp - initialize display */
 
-init_disp()
+void init_disp()
 {
   initscr();
   clear();
   crmode();
   noecho();
   nonl();
+  if(!ndebug) LINEE=LINES;
+  else resizeterm(50,COLS);
   draw_field();
 }
 
 
 /* end_disp - cleanup and end display */
 
-end_disp()
+void end_disp()
 {
   nocrmode();
   echo();
@@ -85,15 +94,15 @@ end_disp()
 
 /* draw_field - draws the playing field and status boxes */
 
-draw_field()
+void draw_field()
 {
   int i, j;
 
-  /* init fixed screen data; 0,0 is top left, LINES-1,COLS-1 is lower right */
+  /* init fixed screen data; 0,0 is top left, LINEE-1,COLS-1 is lower right */
   f_width = COLS - STAT_WID - 3;  /* columns available */
-  f_height= LINES - 3;            /* lines available */
+  f_height= LINEE - 3;            /* LINEE available */
 
-  
+
   /* top line */
   move(0,0);
   addch(UL_CORN);
@@ -102,7 +111,7 @@ draw_field()
   }
   addch(UR_CORN);
 
-  /* middle lines */
+  /* middle LINEE */
   for (i = 1; i <= f_height+1; i++) {
     move(i,0);
     addch(VERT);
@@ -111,12 +120,19 @@ draw_field()
   }
 
   /* bottom line */
-  move(LINES-1,0);
+  move(LINEE-1,0);
   addch(LL_CORN);
   for (i = 0; i <= f_width; i++) {
     addch(HORZ);
   }
   addch(LR_CORN);
+
+  /* aggiunta di info */
+  move(LINEE-1,2);
+  printw("\"SPACE\"=go  \".\"=stop/step  \"1-9\"=select speed  \"Q\"=quit");
+
+
+
 
   /* status boxes -- CAUTION: this is dependent on MAXROBOTS */
   for (i = 0; i < MAXROBOTS; i++) {
@@ -136,7 +152,9 @@ draw_field()
 	addch(HORZ);
     }
   }
-  move(LINES-1,COLS-STAT_WID);
+  move(LINEE-1-1,COLS-STAT_WID);
+  printw(" Speed:           ");
+  move(LINEE-1,COLS-STAT_WID);
   printw(" CPU Cycle:       ");
 
   /* init columns for damage, speed; scan, heading */
@@ -152,7 +170,7 @@ draw_field()
 
 /* plot_robot - plot the robot position */
 
-plot_robot(n)
+void plot_robot(n)
 
 int n;
 {
@@ -194,7 +212,7 @@ int n;
 
 /* plot_miss - plot the missile position */
 
-plot_miss(r,n)
+void plot_miss(r,n)
 
 int r;
 int n;
@@ -242,7 +260,7 @@ int n;
 
 /* plot_exp - plot the missile exploding */
 
-plot_exp(r,n)
+void plot_exp(r,n)
 
 int r;
 int n;
@@ -258,7 +276,7 @@ int n;
     for (i = 0; i < MAXROBOTS; i++) {
       if (robots[i].status == DEAD)
 	continue; /* inactive robot */
-      if (missiles[r][n].last_xx == robots[i].last_x && 
+      if (missiles[r][n].last_xx == robots[i].last_x &&
 	  missiles[r][n].last_yy == robots[i].last_y) {
 	k = 0;
 	break;    /* conflict, robot in that position */
@@ -289,6 +307,7 @@ int n;
     new_y++;
 
     /* check for off of playfield */
+
     if (new_x <= 0 || new_x > f_width+1 || new_y <= 0 || new_y > f_height+1)
       continue;
 
@@ -312,7 +331,7 @@ int n;
 
 /* robot_stat - update status info */
 
-robot_stat(n)
+void robot_stat(n)
 
 int n;
 {
@@ -347,19 +366,20 @@ int n;
   move(5*n+3,col_1);
   printw("%3d",robots[n].x / CLICK);
   move(5*n+3,col_2);
-  printw("%3d",robots[n].y / CLICK);
-*/
-
+  printw("%3d ",cur_robot->ip->u.var1);
+   */
   if (changed)
     refresh();
 }
 
 
-show_cycle(l)
+void show_cycle(l)
 
 long l;
 {
-  move(LINES-1,col_3);
+  move(LINEE-1-1,col_3);
+  printw("%7d",10-ritardo);
+  move(LINEE-1,col_3);
   printw("%7ld",l);
   refresh();
 }

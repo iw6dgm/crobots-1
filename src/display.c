@@ -1,5 +1,6 @@
 
 
+
 /*****************************************************************************/
 /*                                                                           */
 /*  CROBOTS                                                                  */
@@ -13,18 +14,21 @@
 
 #include "crobots.h"
 
-
 /* update_disp - update all robots and missiles */
 
-update_disp()
+
+void update_disp()
 {
   register int i, j;
+  ap_main();
 
   /* plot each live robot and update status */
   for (i = 0; i < MAXROBOTS; i++) {
     if (robots[i].status != DEAD) {
       plot_robot(i);
       robot_stat(i);
+    if(ndebug) debug_par(i);
+
     }
     /* plot each missile */
     for (j = 0; j < MIS_ROBOT; j++) {
@@ -48,7 +52,7 @@ update_disp()
 
 /* count_miss - update the explosion counter */
 
-count_miss(i,j) 
+void count_miss(i,j)
 
 int i, j;
 {

@@ -1,4 +1,6 @@
 # include "stdio.h"
+#include <string.h>
+
 # define U(x) x
 # define NLSTATE yyprevious=YYNEWLINE
 # define BEGIN yybgin = yysvec + 1 +
@@ -17,7 +19,15 @@ int yyleng; extern char yytext[];
 int yymorfg;
 extern char *yysptr, yysbuf[];
 int yytchar;
-FILE *yyin = {stdin}, *yyout = {stdout};
+
+/*Questa e' la linea originale, e non compila
+FILE *yyin={stdin}, *yyout={stdout};*/
+
+/*Questa e- la mia, e compila, ma forse e' la causa del core dumped*/
+FILE *yyin = (FILE *) 0, *yyout = (FILE *) 0;
+/*extern FILE *yyin, *yyout;*/
+
+
 extern int yylineno;
 struct yysvf { 
 	struct yywork *yystoff;
@@ -52,7 +62,6 @@ extern struct yysvf yysvec[], *yybgin;
 #define ECHO fprintf(f_out,"%s",yytext)
 
 long atol();
-int count();
 
 # define YYNEWLINE 10
 yylex(){
@@ -241,12 +250,12 @@ fprintf(yyout,"bad switch yylook %d",nstr);
 } return(0); }
 /* end of yylex */
 
-yywrap()
+int yywrap()
 {
 	return(1);
 }
 
-comment()
+void comment()
 {
 	char c, c1;
 
@@ -270,7 +279,7 @@ loop:
 }
 
 
-count()
+void count()
 {
 	int i;
 
@@ -295,16 +304,16 @@ int lexgetc()
   return ((c == EOF) ? 0 : c);
 }
 
-lexungetc(c)
+void lexungetc(c)
 int c;
 {
   ungetc(c,f_in);
 }
 
-lexputc(c)
+void lexputc(c)
 int c;
 {
-  fputc(c,f_out);
+  putc(c,f_out);
 }
 
 /* these two dummy routines for lex's debug options */
@@ -647,7 +656,7 @@ int yyvstop[] = {
 # define YYTYPE char
 struct yywork { YYTYPE verify, advance; } yycrank[] = {
 0,0,	0,0,	1,3,	0,0,	
-0,0,	0,0,	0,0,	0,0,	
+0,0,	0,0,	0,0,	0,0,
 0,0,	0,0,	1,4,	1,5,	
 0,0,	0,0,	0,0,	0,0,	
 0,0,	0,0,	0,0,	0,0,	
@@ -659,7 +668,7 @@ struct yywork { YYTYPE verify, advance; } yycrank[] = {
 0,0,	1,9,	1,10,	1,11,	
 1,12,	1,13,	1,14,	1,15,	
 1,16,	1,17,	8,39,	12,42,	
-14,44,	16,46,	0,0,	0,0,	
+14,44,	16,46,	0,0,	0,0,
 0,0,	0,0,	0,0,	0,0,	
 1,18,	1,19,	1,20,	1,21,	
 6,37,	7,38,	1,22,	11,41,	
@@ -671,7 +680,7 @@ struct yywork { YYTYPE verify, advance; } yycrank[] = {
 34,66,	49,68,	53,69,	0,0,	
 0,0,	0,0,	0,0,	1,23,	
 0,0,	0,0,	1,24,	1,25,	
-0,0,	0,0,	1,26,	1,27,	
+0,0,	0,0,	1,26,	1,27,
 28,61,	30,64,	1,28,	32,65,	
 57,71,	1,29,	26,58,	0,0,	
 28,62,	27,60,	29,63,	1,30,	
@@ -683,7 +692,7 @@ struct yywork { YYTYPE verify, advance; } yycrank[] = {
 2,10,	2,11,	2,12,	2,13,	
 2,14,	2,15,	2,16,	65,79,	
 70,80,	71,81,	72,82,	64,78,	
-73,83,	76,84,	77,85,	34,67,	
+73,83,	76,84,	77,85,	34,67,
 78,86,	79,87,	2,18,	2,19,	
 2,20,	2,21,	81,88,	83,89,	
 85,90,	86,91,	87,92,	89,93,	
@@ -695,7 +704,7 @@ struct yywork { YYTYPE verify, advance; } yycrank[] = {
 0,0,	0,0,	0,0,	0,0,	
 0,0,	2,23,	0,0,	0,0,	
 2,24,	2,25,	0,0,	0,0,	
-2,26,	2,27,	0,0,	0,0,	
+2,26,	2,27,	0,0,	0,0,
 2,28,	0,0,	0,0,	2,29,	
 0,0,	0,0,	0,0,	0,0,	
 0,0,	2,30,	0,0,	0,0,	
@@ -707,7 +716,7 @@ struct yywork { YYTYPE verify, advance; } yycrank[] = {
 0,0,	0,0,	0,0,	0,0,	
 0,0,	0,0,	0,0,	22,54,	
 22,54,	22,54,	22,54,	22,54,	
-22,54,	22,54,	22,54,	22,54,	
+22,54,	22,54,	22,54,	22,54,
 22,54,	22,54,	22,54,	22,54,	
 22,54,	22,54,	22,54,	22,54,	
 22,54,	22,54,	22,54,	22,54,	
@@ -719,7 +728,7 @@ struct yywork { YYTYPE verify, advance; } yycrank[] = {
 22,54,	22,54,	22,54,	22,54,	
 22,54,	22,54,	22,54,	22,54,	
 22,54,	22,54,	22,54,	22,54,	
-22,54,	22,54,	22,54,	22,54,	
+22,54,	22,54,	22,54,	22,54,
 22,54,	0,0,	0,0,	0,0,	
 0,0};
 struct yysvf yysvec[] = {
@@ -862,16 +871,16 @@ char *yysptr = yysbuf;
 int *yyfnd;
 extern struct yysvf *yyestate;
 int yyprevious = YYNEWLINE;
-yylook(){
+int yylook(){
 	register struct yysvf *yystate, **lsp;
 	register struct yywork *yyt;
 	struct yysvf *yyz;
 	int yych, yyfirst;
 	struct yywork *yyr;
-	int debug;
+	int odebug;
 	char *yylastch;
 	/* start off machines */
-	debug = 0;
+	odebug = 0;
 	yyfirst=1;
 	if (!yymorfg)
 		yylastch = yytext;
@@ -884,7 +893,7 @@ yylook(){
 		yyestate = yystate = yybgin;
 		if (yyprevious==YYNEWLINE) yystate++;
 		for (;;){
-			if(debug)fprintf(yyout,"state %d\n",yystate-yysvec-1);
+			if(odebug)fprintf(yyout,"state %d\n",yystate-yysvec-1);
 			yyt = yystate->yystoff;
 			if(yyt == yycrank && !yyfirst){  /* may not be any transitions */
 				yyz = yystate->yyother;
@@ -894,7 +903,7 @@ yylook(){
 			*yylastch++ = yych = input();
 			yyfirst=0;
 		tryagain:
-			if(debug){
+			if(odebug){
 				fprintf(yyout,"char ");
 				allprint(yych);
 				putchar('\n');
@@ -911,7 +920,7 @@ yylook(){
 				}
 			else if((int)yyt < (int)yycrank) {		/* r < yycrank */
 				yyt = yyr = yycrank+(yycrank-yyt);
-				if(debug)fprintf(yyout,"compressed state\n");
+				if(odebug)fprintf(yyout,"compressed state\n");
 				yyt = yyt + yych;
 				if(yyt <= yytop && yyt->verify+yysvec == yystate){
 					if(yyt->advance+yysvec == YYLERR)	/* error transitions */
@@ -920,7 +929,7 @@ yylook(){
 					goto contin;
 					}
 				yyt = yyr + YYU(yymatch[yych]);
-				if(debug){
+				if(odebug){
 					fprintf(yyout,"try fall back character ");
 					allprint(YYU(yymatch[yych]));
 					putchar('\n');
@@ -933,20 +942,20 @@ yylook(){
 					}
 				}
 			if ((yystate = yystate->yyother) && (yyt= yystate->yystoff) != yycrank){
-				if(debug)fprintf(yyout,"fall back to state %d\n",yystate-yysvec-1);
+				if(odebug)fprintf(yyout,"fall back to state %d\n",yystate-yysvec-1);
 				goto tryagain;
 				}
 			else
 				{unput(*--yylastch);break;}
 		contin:
-			if(debug){
+			if(odebug){
 				fprintf(yyout,"state %d char ",yystate-yysvec-1);
 				allprint(yych);
 				putchar('\n');
 				}
 			;
 			}
-		if(debug){
+		if(odebug){
 			fprintf(yyout,"stopped at %d with ",*(lsp-1)-yysvec-1);
 			allprint(yych);
 			putchar('\n');
@@ -965,7 +974,7 @@ yylook(){
 				yylsp = lsp;
 				yyleng = yylastch-yytext+1;
 				yytext[yyleng] = 0;
-				if(debug){
+				if(odebug){
 					fprintf(yyout,"\nmatch ");
 					sprint(yytext);
 					fprintf(yyout," action %d\n",*yyfnd);
@@ -983,11 +992,12 @@ yylook(){
 		if (yyprevious>0)
 			output(yyprevious);
 		yylastch=yytext;
-		if(debug)putchar('\n');
+		if(odebug)putchar('\n');
 		}
 	}
+
 yyback(p, m)
-	int *p;
+int *p;
 {
 if (p==0) return(0);
 while (*p)
@@ -998,6 +1008,7 @@ while (*p)
 return(0);
 }
 	/* the following are only used in the lex library */
+
 yyinput(){
 	return(input());
 	}

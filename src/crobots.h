@@ -11,13 +11,19 @@
 
 /* common defines */
 
+
+#define UNIX    1
+/*#define __MSDOS__ 1*/
+/*#define bcc32 1*/
+
+
 /* note-the INIT flag (or lack of it) causes extern for all but one module */
 
 #define ILEN      8		/* length of identifiers, also in lexanal.l */
+#define MAXSYM    128    /* maximum number of symbol table entries per pool */
 #define MAXROBOTS 4		/* maximum number of robots */
-#define CODESPACE 1000		/* maximum number of machine instructions */
-#define DATASPACE 500		/* maximum number of data stack entries */
-#define UPDATE_CYCLES 30  	/* number of cycles before screen update */
+#define CODESPACE 2000		/* maximum number of machine instructions */
+#define DATASPACE 2000		/* maximum number of data stack entries */
 #define MOTION_CYCLES 15 	/* number of cycles before motion update */
 #define CYCLE_LIMIT 500000L	/* limit of background cycles */
 #define ROBOT_SPEED 7		/* multiplicative speed factor */
@@ -51,6 +57,7 @@ struct robot {			/* robot context */
   int reload;			/* number of cycles between reloading */
   int ext_count;		/* size of external pool needed */
   long *external;		/* external variable pool */
+  char *vnames;     		/*store external variables*/
   long *local;			/* current local variables on stack */
   long *stackbase;		/* base of local & expression stack */
   long *stackend;		/* end of stack */
@@ -59,12 +66,13 @@ struct robot {			/* robot context */
   char *funcs;			/* table of function names by offset */
   struct func *code_list;	/* list of function headers */
   struct instr *code;		/* machine instructions, actually instr */
-  struct instr *ip; 		/* instruction pointer */
+  struct instr *ip;		/* instruction pointer */
 };
 
 struct func {			/* function header */
   struct func *nextfunc;	/* next function header in chain */
   char func_name[ILEN];		/* function name */
+  char *vnames;     		/*store local variables*/
   struct instr *first;		/* first instruction pointer */
   int var_count;		/* number of pool variables needed */
   int par_count;		/* number of parameters expected */
@@ -74,14 +82,29 @@ struct instr {			/* robot machine instruction */
   char ins_type;		/* instruction type */
   union {
     long k;			/* constant value */
-    short int var1;		/* variable offset, function offset, operator */
+    long var1;		/* variable offset, function offset, operator */
     struct instr *br;		/* false branch */
     struct {
-      short int var2;		/* assignment variable offset */
-      short int a_op;		/* assignment operator */
+#ifdef UNIX
+      long var2;		/* assignment variable offset */
+      long a_op;		/* assignment operator */
+#else
+      int var2;           /* assignment variable offset */
+      int a_op;           /* assignment operator */
+#endif
     } a;
   } u;
 };
+
+/* ap.c constants*/
+#define  VELOCE  ( 0 )
+#define  DEFAULT ( 7 )
+#define  LENTO   ( 9 )
+#ifndef INIT
+extern
+#endif
+long ritardo;
+
 
 
 /* missile constants */
@@ -117,12 +140,13 @@ struct missile missiles[MAXROBOTS][MIS_ROBOT];
 extern
 #endif
 struct robot *cur_robot,	/* current robot */
-             robots[MAXROBOTS];	/* all robots */
+	     robots[MAXROBOTS];	/* all robots */
 
 #ifndef INIT
 extern
 #endif
 int r_debug,			/* debug switch */
+    ndebug,
     r_flag;			/* global flag for push/pop errors */
 
 /* instruction types */
@@ -157,20 +181,19 @@ int r_debug,			/* debug switch */
 #define FAR_RANGE    40
   
 /* declare the intrinsic functions, all must push a long value on the stack */
-/* these functions don't return a long, but declared long for notation */
-long c_scan();    /* scan(degree,res);  >0 = robot distance, 0 = nothing */
-long c_cannon();  /* cannon(degree,dist); fire cannon */
-long c_drive();   /* drive(degree,speed); speed 0-100 in % */
-long c_damage();  /* damage(); = current damage in % */
-long c_speed();   /* speed(); = current speed */ 
-long c_loc_x();   /* loc_x(); = current x location */
-long c_loc_y();   /* loc_y(); = current y location */
-long c_rand();    /* rand(limit); = 0 -- limit (2**15)-1 */
-long c_sin();     /* sin(degree); = sin * 100000 */
-long c_cos();     /* cos(degree); = cos * 100000 */
-long c_tan();     /* tan(degree); = tan * 100000 */
-long c_atan();    /* atan(ratio); = degree */
-long c_sqrt();    /* sqrt(x); = square root */
+void c_scan();    /* scan(degree,res);  >0 = robot distance, 0 = nothing */
+void c_cannon();  /* cannon(degree,dist); fire cannon */
+void c_drive();   /* drive(degree,speed); speed 0-100 in % */
+void c_damage();  /* damage(); = current damage in % */
+void c_speed();   /* speed(); = current speed */
+void c_loc_x();   /* loc_x(); = current x location */
+void c_loc_y();   /* loc_y(); = current y location */
+void c_rand();    /* rand(limit); = 0 -- limit (2**15)-1 */
+void c_sin();     /* sin(degree); = sin * 100000 */
+void c_cos();     /* cos(degree); = cos * 100000 */
+void c_tan();     /* tan(degree); = tan * 100000 */
+void c_atan();    /* atan(ratio); = degree */
+void c_sqrt();    /* sqrt(x); = square root */
 
 /* declare instrinsic function table */
 #ifndef INIT
@@ -178,12 +201,12 @@ extern
 #endif
 struct intrin {
   char *n;
-  long (*f)();
+  void (*f)();
 } intrinsics[20]
 
 #ifdef INIT
  = {
-  {"*dummy*",	(long (*)()) 0},
+  {"*dummy*",	(void (*)()) 0},
   {"scan",	c_scan},
   {"cannon",	c_cannon},
   {"drive",	c_drive},
@@ -197,9 +220,61 @@ struct intrin {
   {"tan",	c_tan},
   {"atan",	c_atan},
   {"sqrt",	c_sqrt},
-  {"",		(long (*)()) 0} 
- }
+  {"",		(void (*)()) 0}
+}
 #endif
 ;
+
+/*definitions*/
+void ap_main();
+int poolsize(char *);
+long findvar(char *, char *);
+long allocvar(char *, char *);
+void dumpoff(char *);
+void decompile(struct instr*);
+void decinstr(struct instr*);
+void printop(int);
+void loadrobot(char *);
+void init_robot(int);
+void init_comp();
+int reset_comp();
+int yyparse();
+void binaryop(int);
+void robot_go(struct robot*);
+void dumpvar(long *,int);
+void warn();
+/*void move(int, int);*/
+void miss_dat(int);
+void dvar(char *,long *,int);
+void dlocal(char *, long*);
+void showinstr(struct instr *,int);
+void newprint(int);
+void plot_robot(int);
+void robot_stat(int);
+void debug_par(int);
+void plot_miss(int,int);
+void plot_exp(int,int);
+void count_miss(int,int);
+void draw_field();
+void rand_pos(int);
+void free_robot(int);
+void tracef(char *);
+void match(int,long,char **,int);
+void play(char **,int);
+void comp(char **,int);
+void init_disp();
+void update_disp();
+void cycle();
+void move_robots(int);
+void move_miss(int);
+void show_cycle(long);
+void end_disp();
+
+
+
+
+
+
+
 
 /* end of crobots.h header */

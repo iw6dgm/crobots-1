@@ -10,28 +10,43 @@
 /*****************************************************************************/
 
 /* main.c - top level controller */
+/* compile in compact memory model*/
 
 
 #include <stdio.h>
+#include <stdlib.h>
 
 /* INIT causes externals in crobots.h to have storage, & init intrinsic table */
-#define INIT 1 
+#define INIT 1
 #include "crobots.h"
 
 #ifdef UNIX
 #include <signal.h>
 extern int catch_int();
 #endif
+
+
+int UPDATE_CYCLES=5;         /* number of cycles before screen update */
+
+
 #ifdef LATTICE
 int _stack = 6000;  /* Lattice C: give more stack than default of 2048 */
 #endif
-
+#ifdef DOS /* Turbo C */
+#include <dos.h>
+#include <process.h>
+extern unsigned _stklen = 8000U;
+#endif
 /* files declared in compiler.h */
 FILE *f_in;
 FILE *f_out;
 
-char *version   = "CROBOTS - version 1.1, December, 1985\n";
-char *copyright = "Copyright 1985 by Tom Poindexter, All rights reserved.\n";
+char *version   = "CROBOTS - version 1.1, PatchLevel3.0\n";
+char *copyright = "Copyright 1985-2007 by Tom Poindexter, All rights reserved.\n";
+int garbage=0;
+
+char *nuxx="main";
+char *bpoint="";
 
 
 main(argc,argv)
@@ -47,24 +62,9 @@ char *argv[];
   char *files[MAXROBOTS];
   char *prog;
   char *strrchr();   /* this is rindex in some compilers */
-  unsigned seed;
-  long time();
   long atol();
-  long cur_time;
-  int srand();
-
-
-  /* print version, copyright notice, GPL notice */
-
-  fprintf(stderr,"\n");
-  fprintf(stderr,version);
-  fprintf(stderr,copyright);
-  fprintf(stderr,"\n     CROBOTS - fighting robots C compiler and virtual computer\n");
-  fprintf(stderr,"       distributed under the GNU GPL, version 2.\n");
-  fprintf(stderr,"\n");
-  fprintf(stderr,"Press <enter> to continue......");
-  getchar();
-  fprintf(stderr,"\n");
+  long time();
+  void srand();
 
   /* init robots */
   for (i = 0; i < MAXROBOTS; i++) {
@@ -73,16 +73,13 @@ char *argv[];
   }
 
 
-  /* seed the random number generator */
-  cur_time = time((long *) 0);
-  seed = (unsigned) (cur_time & 0x0000ffffL);
-  srand(seed);
-
 #ifdef UNIX
   prog = argv[0];
 #else
   prog = "crobots";
 #endif
+  ndebug=0;
+  ritardo=DEFAULT;
 
   /* parse the command line */
   for (i = 1; --argc; i++) {
@@ -90,7 +87,7 @@ char *argv[];
     if (argv[i][0] == '-') {
 
       switch (argv[i][1]) {
-       
+
 	/* limit number of cycles in a match */
 	case 'l':
 	case 'L':
@@ -98,22 +95,41 @@ char *argv[];
 	  break;
 
 	/* run multiple matches */
-        case 'm':
-        case 'M':
+	case 'm':
+	case 'M':
 	  matches = atoi((argv[i])+2);
 	  break;
-	   
+
 	/* compile only flag */
-        case 'c':
-        case 'C':
-          comp_only = 1;
+	case 'c':
+	case 'C':
+	  comp_only = 1;
 	  break;
 
 	/* debug one robot */
-        case 'd':
-        case 'D':
-          debug_only = 1;
+	case 'd':
+	case 'D':
+	  debug_only = 1;
 	  break;
+
+	/* full debug */
+	case 's':
+	case 'S':
+	  ndebug=1;
+          ritardo=LENTO;
+
+	  if (strlen(argv[i])>3) bpoint=argv[i]+3;
+	  else bpoint="";
+	  break;
+
+
+	/*Noheader*/
+#ifdef __MSDOS__
+	case 'g':
+	case 'G':
+	  garbage = 1;
+	  break;
+#endif
 
 	default:
 	  break;
@@ -121,24 +137,53 @@ char *argv[];
 
     } else { 	/* a file name, check for existence */
 
-      if (num_robots < MAXROBOTS) {
+    if (num_robots < MAXROBOTS) {
 	if ((f_in = fopen(argv[i],"r")) != (FILE *) NULL) {
 	  fclose(f_in);
 	  files[num_robots] = argv[i];
 	  num_robots++;
 	} else {
-	  fprintf(stderr,"%s: robot source file `%s' not found\n",prog,
-		  argv[i]);
-          printf("Press <enter> to continue......");
-          getchar();
-          printf("\n");
+	  fprintf(stderr,"%s: robot source file `%s' not found\n",prog, argv[i]);
+	  printf("Press <enter> to continue......");
+	  getchar();
+	  printf("\n");
 	}
       } else {
 	fprintf(stderr,"%s: extra robot source `%s' ignored\n",prog,argv[i]);
       }
     }
-	
+
   }
+
+  /* print version, copyright notice, shareware info */
+if (!garbage)
+{
+  fprintf(stderr,"\n");
+  fprintf(stderr,version);
+  fprintf(stderr,copyright);
+  fprintf(stderr,"\n     CROBOTS - fighting robots C compiler and virtual computer\n");
+  fprintf(stderr,"             YASP - Yet Another Shareware Program\n");
+  fprintf(stderr,"\n");
+  fprintf(stderr,"       Support shareware!  You should make a payment to\n");
+  fprintf(stderr,"       the author if you decide to keep this software.\n");
+  fprintf(stderr,"       A $20.00 payment is suggested.  For payments of $20.00\n");
+  fprintf(stderr,"       or more, you will receive the full source code of this\n");
+  fprintf(stderr,"       program.  See the documentation for order forms.  \n");
+  fprintf(stderr,"       In any case, you may copy and distribute this program\n");
+  fprintf(stderr,"       provided that:\n");
+  fprintf(stderr,"         1) It is distributed in its original form, and all\n");
+  fprintf(stderr,"            copyrights and notices are preserved.\n");
+  fprintf(stderr,"         2) All documentation and sample files remain with\n");
+  fprintf(stderr,"            the program.\n");
+  fprintf(stderr,"\n");
+  fprintf(stderr,"                 Tom Poindexter\n");
+  fprintf(stderr,"                 2903 Winchester Drive\n");
+  fprintf(stderr,"                 Bloomington, Illinois 61701\n");
+  fprintf(stderr,"\n");
+  fprintf(stderr,"Press <enter> to continue......");
+  getchar();
+  fprintf(stderr,"\n");
+}
 
   /* make sure there is at least one robot at this point */
   if (num_robots == 0) {
@@ -146,43 +191,32 @@ char *argv[];
     exit(1);
   }
 
+  /* seed the random number generator */
+  srand((unsigned) time(NULL));
+
   /* now, figure out what to do */
 
   /* compile only */
-  if (comp_only) {
-    comp(files,num_robots);
-  }
+  if (comp_only) comp(files,num_robots);
   else 
-
     /* debug the first robot listed */
-    if (debug_only) {
-      trace(files[0]); /* trace only first source */
-    }
-    else
+    if (debug_only) tracef(files[0]); /* trace only first source */
+  else {
+	if (num_robots < 2) {	/* if only one robot, make it fight itself */
+	  fprintf(stderr,"%s: only one robot?, cloning a second from %s.\n", prog,files[0]);
+	  num_robots++;
+	  files[1] = files[0];
+	}
+
 
       /* run a series of matches */
-      if (matches != 0) {
-	if (num_robots < 2) {	/* if only one robot, make it fight itself */
-	  fprintf(stderr,"%s: only one robot?, cloning a second from %s.\n",
-		  prog,files[0]);
-	  num_robots++;
-	  files[1] = files[0];
-	}
-	match(matches,limit,files,num_robots);
-      }
+    if (matches != 0) match(matches,limit,files,num_robots);
 
       /* play with full display */
-      else {
-	if (num_robots < 2) {
-	  fprintf(stderr,"%s: only one robot?, cloning a second from %s.\n",
-		  prog,files[0]);
-	  num_robots++;
-	  files[1] = files[0];
-	}
-	play(files,num_robots);
-      }
-	
-  /* all done */ 
+    else play(files,num_robots);
+
+  /* all done */
+  } 
   exit(0);
 
 }
@@ -190,12 +224,14 @@ char *argv[];
 
 /* comp - only compile the files with full info */
 
-comp(f,n)
+void comp(f,n)
 
 char *f[];
 int n;
 {
   int i;
+  char outfile[256];
+  struct func *nextf;
 
   f_out = stdout;
   r_debug = 1;  /* turns on full compile info */
@@ -217,6 +253,20 @@ int n;
       fprintf(stdout,"\n%s could not compile\n\n",f[i]);
     } else {
       fprintf(stdout,"\n%s compiled without errors\n\n",f[i]);
+	  strcpy(outfile,f[i]);
+	  strcat(outfile,"o");
+	  f_out=fopen(outfile,"wb");
+	  fwrite(&(robots[i].code),sizeof(long),1,f_out); /*questo è un valore di offset*/
+	  fwrite(&(robots[i].ext_count),sizeof(int),1,f_out);
+	  fwrite(robots[i].funcs,ILEN,MAXSYM,f_out);
+	  fwrite(robots[i].code, sizeof(struct instr),CODESPACE,f_out);
+	  nextf=robots[i].code_list;
+	  while (nextf != (struct func *) 0) {
+		fwrite(nextf,sizeof(struct func),1,f_out);
+        nextf = nextf->nextfunc;
+	  }
+	  fclose(f_out);
+	  fprintf(stdout,"\nSaved object robot: %s\n\n",outfile);
     }
     if (i < n-1) {
       fprintf(stdout,"\n\n\nPress <enter> to continue.\n");
@@ -226,9 +276,11 @@ int n;
 }
 
 
+
+
 /* play - watch the robots compete */
 
-play(f,n)
+void play(f,n)
 
 char *f[];
 int n;
@@ -246,17 +298,11 @@ int n;
   r_debug = 0;  /* turns off full compile info */
 
   for (i = 0; i < n; i++) {
-    fprintf(f_out,"Compiling robot source: %s\n\n",f[i]);
-    f_in = fopen(f[i],"r");
-
+ 
     /* compile the robot */
     r_flag = 0;
     cur_robot = &robots[num_robots];
-
-    init_comp();	/* initialize the compiler */
-    yyparse();		/* start compiling */
-    reset_comp();	/* reset compiler and complete robot */
-    fclose(f_in);
+	loadrobot(f[i]);
 
     /* check r_flag for compile errors */
     if (r_flag) {
@@ -269,12 +315,17 @@ int n;
       s = strrchr(f[i],'/');
 #else
       if (*f[i]+1 == ':')   	/* drive specified? */
-	f[i] = f[i] + 2;	/* yes, skip it */
+	  f[i] = f[i] + 2;        /* yes, skip it */
       s = strrchr(f[i],'\\');
 #endif
       if (s == (char *) NULL)
-        s = f[i];
+	  s = f[i];
+
       strcpy(robots[num_robots].name,s);
+
+	  s=robots[num_robots].name;	/*questo serve per mettere in output sempre .r*/
+	  if(tolower(s[strlen(s)-1])!='r') s[strlen(s)-1]=0;
+
       robot_go(&robots[num_robots]);
       num_robots++;
     }
@@ -289,8 +340,8 @@ int n;
 
 #ifdef UNIX
   /* catch interrupt */
-  if (signal(SIGINT,SIG_IGN) != SIG_IGN)
-    signal(SIGINT,catch_int);
+  /*if (signal(SIGINT,SIG_IGN) != SIG_IGN)
+    signal(SIGINT,catch_int);*/
 #endif
 
   rand_pos(num_robots);
@@ -307,11 +358,11 @@ int n;
     for (i = 0; i < num_robots; i++) {
       if (robots[i].status == ACTIVE) {
 	robotsleft++;
-        cur_robot = &robots[i];
+	cur_robot = &robots[i];
 	cycle();
-      } 
+      }
     }
-    
+
     /* is it time to update motion? */
     if (--movement <= 0) {
       movement = MOTION_CYCLES;
@@ -320,6 +371,8 @@ int n;
     }
     /* is it time to update display */
     if (--display <= 0) {
+
+
       display = UPDATE_CYCLES;
       c += UPDATE_CYCLES;
       show_cycle(c);
@@ -341,8 +394,8 @@ int n;
       move_robots(1);
       move_miss(1);
       update_disp();
-    } 
-    else  
+    }
+    else
       break;
   }
 
@@ -370,7 +423,7 @@ int n;
 
 /* match - run a series of matches */
 
-match(m,l,f,n)
+void match(m,l,f,n)
 
 int m;
 long l;
@@ -390,42 +443,44 @@ int n;
 
 #ifdef UNIX
   f_out = fopen("/dev/null","w");
+#elif defined (__MSDOS__)
+  f_out = stdin; /* e' una porcheria... ma funziona*/
 #else
   f_out = fopen("nul:","w");
 #endif
-  r_debug = 0;  /* turns off full compile info */
+  r_debug = 0; ndebug=0;  /* turns off full compile info */
 
   for (i = 0; i < n; i++) {
     wins[i] = 0;
     ties[i] = 0;
-    fprintf(stderr,"Compiling robot source: %s\n",f[i]);
-    f_in = fopen(f[i],"r");
 
     /* compile the robot */
     r_flag = 0;
     cur_robot = &robots[num_robots];
 
-    /* compile the robot */
-    init_comp();
-    yyparse();
-    reset_comp();
-    fclose(f_in);
+	loadrobot(f[i]);
 
     /* check r_flag for compile errors */
     if (r_flag) {
       fprintf(stderr,"\n %s could not compile\n",f[i]);
       free_robot(num_robots);
     } else {
-      fprintf(stderr,"\n %s compiled without errors\n",f[i]);
+      if (!garbage) fprintf(stderr,"\n %s compiled without errors\n",f[i]);
       /* get last part of file name */
 #ifdef UNIX
       s = strrchr(f[i],'/');
 #else
+      if (*f[i]+1 == ':')   	/* drive specified? */
+	f[i] = f[i] + 2;        /* yes, skip it */
       s = strrchr(f[i],'\\');
 #endif
       if (s == (char *) NULL)
-        s = f[i];
+	  s = f[i];
       strcpy(robots[num_robots].name,s);
+
+	  s=robots[num_robots].name;	/*questo serve per mettere in output sempre .r*/
+	  if(tolower(s[strlen(s)-1])!='r') s[strlen(s)-1]=0;
+
       num_robots++;
     }
   }
@@ -437,7 +492,7 @@ int n;
     exit(1);
   }
 
-  fprintf(stderr,"\nMatch play starting.\n\n");
+  if (!garbage) fprintf(stderr,"\nMatch play starting.\n\n");
   for (m_count = 1; m_count <= m; m_count++) {
 
     printf("\nMatch %6d: ",m_count);
@@ -457,7 +512,7 @@ int n;
 	  robotsleft++;
 	  cur_robot = &robots[i];
 	  cycle();
-	} 
+	}
       }
       if (--movement == 0) {
 	c += MOTION_CYCLES;
@@ -465,7 +520,7 @@ int n;
 	move_robots(0);
 	move_miss(0);
 #ifdef DOS
-        kbhit();  /* check keyboard so ctrl-break can work */
+	kbhit();  /* check keyboard so ctrl-break can work */
 #endif
 	for (i = 0; i < num_robots; i++) {
 	  for (j = 0; j < MIS_ROBOT; j++) {
@@ -490,8 +545,8 @@ int n;
       if (k) {
 	move_robots(0);
 	move_miss(0);
-      } 
-      else  
+      }
+      else
 	break;
     }
 
@@ -534,67 +589,31 @@ int n;
     printf("\n");
   }
 
-  fprintf(stderr,"\nMatch play finished.\n\n");
+  fprintf(stderr,"\n Match play finished.\n\n");
   exit(0);
 
-}
-
-
-/* rand_pos - randomize the starting robot postions */
-/*           dependent on MAXROBOTS <= 4 */
-/*            put robots in separate quadrant */
-
-rand_pos(n)
-
-int n;
-{
-  int i, k;
-  int quad[4];
-
-  for (i = 0; i < 4; i++) {
-    quad[i] = 0;
-  }
-
-  /* get a new quadrant */
-  for (i = 0; i < n; i++) {
-    k = rand() % 4;
-    if (quad[k] == 0) 
-      quad[k] = 1;
-    else {
-      while (quad[k] != 0) {
-	if (++k == 4)
-	  k = 0;
-      }
-      quad[k] = 1;
-    }
-    robots[i].org_x = robots[i].x = 
-       (rand() % (MAX_X * CLICK / 2)) + ((MAX_X * CLICK / 2) * (k%2));
-    robots[i].org_y = robots[i].y = 
-       (rand() % (MAX_Y * CLICK / 2)) + ((MAX_Y * CLICK / 2) * (k<2));
-  }
 }
 
 
 
 /* trace - compile and run the robot in debug mode */
 
-trace(f)
+void tracef(f)
 
 char *f;
 {
-  int c = 1; 
+  int c = 1;
 
   r_debug = 1; /* turns on debugging in cpu */
-  f_in = fopen(f,"r");
+  ndebug=0;
   f_out= stdout;
 
   /* compile the robot */
   r_flag = 0;
   cur_robot = &robots[0];
-  init_comp();
-  yyparse();
-  reset_comp();
+  loadrobot(f);
 
+  
   /* check r_flag for compile errors */
   if (r_flag) {
     fprintf(stderr," %s could not compile\n",f);
@@ -605,6 +624,7 @@ char *f;
 
   /* randomly place robot */
   robots[0].x = rand() % MAX_X * 100;
+
   robots[0].y = rand() % MAX_Y * 100;
 
   /* setup a dummy robot at the center */
@@ -614,9 +634,9 @@ char *f;
 
   cur_robot = &robots[0];
 
-  fprintf("\n\nReady to debug, use `d' to dump robot info, `q' to quit.\n\n");
+  printf("\n\nReady to debug, use `d' to dump robot info, `q' to quit.\n\n");
 
-  while (c) {  
+  while (c) {
     cycle();
 
     /* r_flag set by hitting 'q' in cycle()'s debug mode */
@@ -632,7 +652,7 @@ char *f;
 
 
 /* init a robot */
-init_robot(i)
+void init_robot(i)
 
 int i;
 {
@@ -669,7 +689,7 @@ int i;
 
 /* free_robot - frees any allocated storage in a robot */
 
-free_robot(i) 
+void free_robot(i)
 
 int i;
 {
@@ -695,6 +715,44 @@ int i;
 
 }
 
+/* rand_pos - randomize the starting robot postions */
+/*           dependent on MAXROBOTS <= 4 */
+/*            put robots in separate quadrant */
+
+void rand_pos(n)
+
+int n;
+{
+  int i, k;
+  int quad[4];
+
+  for (i = 0; i < 4; i++) {
+    quad[i] = 0;
+  }
+
+
+  /* get a new quadrant */
+  for (i = 0; i < n; i++) {
+    k = rand() % 4;
+    if (quad[k] == 0)
+      quad[k] = 1;
+    else {
+      while (quad[k] != 0) {
+	if (++k == 4)
+	  k = 0;
+      }
+      quad[k] = 1;
+    }
+    robots[i].org_x = robots[i].x =
+       (rand() % (MAX_X * CLICK / 2)) + ((MAX_X * CLICK / 2) * (k%2));
+    robots[i].org_y = robots[i].y =
+       (rand() % (MAX_Y * CLICK / 2)) + ((MAX_Y * CLICK / 2) * (k<2));
+  }
+}
+
+
+
+
 
 #ifdef UNIX
 /* catch_int - catch the interrupt signal and die, cleaning screen */
@@ -702,7 +760,7 @@ int i;
 catch_int()
 {
   int i;
-/* 
+/*
   for (i = 0; i < MAXROBOTS; i++) {
     cur_robot = &robots[i];
       printf("\nrobot: %d",i);
@@ -732,32 +790,6 @@ catch_int()
     end_disp();
   exit(0);
 }
-#endif
-
-#ifdef DOS
-
-/* not quite the unix time() function, but gets the job done */
-
-long time(x)
-long *x;
-{
-  struct {
-    short ax,bx,cx,dx,si,di;
-  } regs;
-  int intno = 0x21;	/* dos call */
-  long value;
-
-  regs.ax = 0x2c00;   	/* ah = function 2C, get time */
-
-  int86(intno,&regs,&regs);
-
-  value = regs.cx;
-  value <<= 16;		/* shift into high part */
-  value |= regs.dx;	/* low part */
-
-  return (value);
-}
-
 #endif
 
 

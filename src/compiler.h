@@ -13,7 +13,6 @@
 
 /* note-the EXT flag (or lack of it) causes the extern in all but one module */
 
-#define MAXSYM    64    /* maximum number of symbol table entries per pool */
 #define NESTLEVEL 16	/* maximum nest level for ifs, whiles, and fcalls */
 
 extern char yytext[];	/* from lexical analyzer */
@@ -31,7 +30,7 @@ char last_ident[ILEN],	/* last identifier recognized */
 extern
 #endif
 struct instr *last_ins,	/* last instruction compiled */
-             *instruct;	/* current instruction */
+	     *instruct;	/* current instruction */
 
 #ifndef EXT
 extern
@@ -84,13 +83,68 @@ int  func_off,		/* function stack offset */
      var_off,		/* variable stack offset */
      *op_stack,		/* assignment operator stack */
      op_off,		/* assignment operator offset */
-     work,		/* integer work value */
      while_nest,	/* current while nest level */
      in_func;		/* in or not in function body, for variable declares */
 
 #ifndef EXT
 extern
 #endif
-struct func *new;	/* current function header */
+	long work;
+
+
+#ifndef EXT
+extern
+#endif
+struct func *newo;	/* current function header */
+
+void comment();
+void count();
+void lexungetc(int);
+void lexputc(int);
+int yyback(int *,int);
+int yylook();
+int yywrap();
+int lexgetc();
+int yyparse();
+void yyerror(char *);
+int yylex();
+int new_func();
+void end_func();
+int stackid(char *,char *,int *);
+int popid(char *, char *, int *);
+int efetch(long);
+int estore(long, int);
+int econst(long);
+int ebinop(long);
+int efcall (long);
+int eretsub();
+int ebranch();
+int echop();
+int eframe();
+int new_if();
+int else_part();
+void close_if();
+int new_while();
+int while_expr();
+int close_while();
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 /* end of compiler.h */

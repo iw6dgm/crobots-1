@@ -10,106 +10,22 @@
 /*****************************************************************************/
 
 /* screen.c - low level screen display routines */
-/*	      change or modify this module for different systems */
+/*            change or modify this module for different systems */
 
 extern long ritardo;
 
+
 #include <stdio.h>
-#include <dos.h>
-#include "crobots.h"
 #include <conio.h>
-#include <stdlib.h>
-/* structure passed on int86 call */
-
-#ifdef bcc32
- union REGS {
-  struct {
-    short ax,bx,cx,dx,si,di;
-  } x;
-  struct {
-    char al,ah,bl,bh,cl,ch,dl,dh;
-  } h;
- };
-#endif
-
+#include "crobots.h"
+#define addch  putchar
+#define printw printf
+/*#include <c:\compiler\cyg\cygwin-b20\h-i586-cygwin32\i586-cygwin32\include\mingw32\conio.h>*/
 
 #define COLS  80
 #define LINES 25
-clear()
-{
-  union REGS r;
-  int intno = 0x10;	/* video bios call */
 
-  r.h.ah = 0x06;	/* scroll-up function */
-  r.h.al = 0;	/* entire window */
-  r.h.ch = 0;	/* upper left row */
-  r.h.cl = 0;	/* upper left col */
-  r.h.dh = 24;	/* lower right row */
-  r.h.dl = 79;	/* lower right col */
-  r.h.bh = 7;	/* normal attributes */
-  int86(intno,&r,&r);
-
-}
-
-move(y,x)
-int y,x;
-{
-  union REGS r;
-  int intno;
-
-  intno = 0x10; 	/* video bios call */
-  r.h.ah = 0x02;	/* set cursor position */
-  r.h.dh = y;
-  r.h.dl = x;
-  r.h.bh = 0;		/* page 0 */
-  fflush (stdout);
-  int86(intno,&r,&r);
-
-  intno = 0x21; 	/* dos call */
-  r.h.ah = 0xb; 	/* check keyboard and crtl-break */
-  int86(intno,&r,&r);
-
-}
-
-/* dummy refresh function */
-
-refresh() {}
-
-#ifdef LATTICE
-/* use lattice's console i/o routines instead of stdio */
-#define addch  putch
-#define printw cprintf
-#else
-/* use stdio i/o routines for xenix cross compiler */
-#define addch  putchar
-#define printw printf
-#endif
-
-/* init_disp - initialize display */
-
-init_disp()
-{
- if(ndebug)
-  textmode(C4350);
- else
-  textmode (C80);
-
-
-  clear();
-  draw_field();
-}
-
-
-/* end_disp - cleanup and end display */
-
-end_disp() {
-  if(ndebug) {
-	textmode(C80);
-	clear();
-  }
-}
-
-
+#ifdef __MSDOS__
 /* playfield characters */
 /* these are the line drawing characters of the PC */
 #define UL_CORN 0xda
@@ -128,6 +44,26 @@ end_disp() {
 #define TOP_BOT 0xb2
 /* the flying shell is the diamond */
 #define SHELL	0x04
+
+#else
+
+/* playfield characters */
+#define UL_CORN '+'
+#define UR_CORN '+'
+#define LL_CORN '+'
+#define LR_CORN '+'
+#define VERT    '|'
+#define HORZ    '-'
+
+/* exploding shell characters */
+#define CENTER  '#'
+#define DIAG_R  '/'
+#define DIAG_L  '\\'
+#define SIDE    '-'
+#define TOP_BOT '|'
+#define SHELL   '+'
+
+#endif
 
 /* structure for explosions */
 struct {
@@ -156,16 +92,61 @@ static int col_2;    /* column for scan & heading */
 static int col_3;    /* column for cpu cycle count*/
 
 
+/* init_disp - initialize display */
+
+void init_disp()
+{
+#ifdef WIN32
+ if(ndebug)
+	system("mode con lines=50");
+ else
+	 system("mode con lines=25");
+#elif __MSDOS__
+ if(ndebug)
+  textmode(C4350);
+ else
+  textmode (C80);
+#endif
+
+  clrscr();
+  draw_field();
+}
+
+
+/* end_disp - cleanup and end display */
+
+void end_disp()
+{
+#ifdef WIN32
+  if(ndebug){
+	system("mode con lines=25");
+  }
+#elif __MSDOS__
+  if(ndebug) {
+	textmode(C80);
+  }
+#endif
+}
+
+refresh() {}
+
+void move(y,x)
+int x,y;
+{
+  fflush (stdout);
+  gotoxy(x+1,y+1);
+}
+
 
 /* draw_field - draws the playing field and status boxes */
 
-draw_field()
+void draw_field()
 {
   int i, j;
 
   /* init fixed screen data; 0,0 is top left, LINES-1,COLS-1 is lower right */
   f_width = COLS - STAT_WID - 3;  /* columns available */
-  f_height= LINES - 3;		  /* lines available */
+  f_height= LINES - 3;            /* lines available */
 
 
   /* top line */
@@ -205,14 +186,17 @@ draw_field()
     printw("  D%%       Sc    ");
     move(5*i+2,COLS-STAT_WID);
     printw("  Sp       Hd    ");
-
+/*
+    move(5*i+3,COLS-STAT_WID);
+    printw("  X=       Y=    ");
+*/
     if (i < MAXROBOTS-1) {
       move(5*i+4,COLS-STAT_WID);
       for (j = 0; j < 19; j++)
 	addch(HORZ);
     }
   }
-  move(LINES-2,COLS-STAT_WID);
+  move(LINES-1-1,COLS-STAT_WID);
   printw(" Speed:           ");
   move(LINES-1,COLS-STAT_WID);
   printw(" CPU Cycle:       ");
@@ -230,7 +214,7 @@ draw_field()
 
 /* plot_robot - plot the robot position */
 
-plot_robot(n)
+void plot_robot(n)
 
 int n;
 {
@@ -252,7 +236,7 @@ int n;
 	continue; /* same robot as n or inactive */
       if (new_x == robots[i].last_x && new_y == robots[i].last_y) {
 	k = 0;
-	break;	  /* conflict, robot in that position */
+	break;    /* conflict, robot in that position */
       }
     }
     if (k) {
@@ -272,7 +256,7 @@ int n;
 
 /* plot_miss - plot the missile position */
 
-plot_miss(r,n)
+void plot_miss(r,n)
 
 int r;
 int n;
@@ -280,9 +264,9 @@ int n;
   int i, k;
   register int new_x, new_y;
 
-  new_x = (int) (((long)((missiles[r][n].cur_x+(CLICK/2)) / CLICK) 
+  new_x = (int) (((long)((missiles[r][n].cur_x+(CLICK/2)) / CLICK)
 		  * f_width) / MAX_X);
-  new_y = (int) (((long)((missiles[r][n].cur_y+(CLICK/2)) / CLICK) 
+  new_y = (int) (((long)((missiles[r][n].cur_y+(CLICK/2)) / CLICK)
 		  * f_height) / MAX_Y);
   /* add one to x and y for playfield offset in screen, and inverse y */
   new_x++;
@@ -299,11 +283,11 @@ int n;
 	  (missiles[r][n].last_xx == robots[i].last_x &&
 	   missiles[r][n].last_yy == robots[i].last_y)) {
 	k = 0;
-	break;	  /* conflict, robot in that position */
+	break;    /* conflict, robot in that position */
       }
     }
     if (k) {
-      if (missiles[r][n].last_yy > 1) {
+      if (missiles[r][n].last_yy > 0) {
 	move(missiles[r][n].last_yy,missiles[r][n].last_xx);
 	addch(' ');
       }
@@ -320,7 +304,7 @@ int n;
 
 /* plot_exp - plot the missile exploding */
 
-plot_exp(r,n)
+void plot_exp(r,n)
 
 int r;
 int n;
@@ -339,11 +323,11 @@ int n;
       if (missiles[r][n].last_xx == robots[i].last_x &&
 	  missiles[r][n].last_yy == robots[i].last_y) {
 	k = 0;
-	break;	  /* conflict, robot in that position */
+	break;    /* conflict, robot in that position */
       }
     }
     if (k) {
-      if (missiles[r][n].last_yy > 1) {
+      if (missiles[r][n].last_yy > 0) {
 	move(missiles[r][n].last_yy,missiles[r][n].last_xx);
 	addch(' ');
       }
@@ -355,10 +339,10 @@ int n;
     else
       return;  /* continue to display explosion */
 
-  hold_x = (int) (((long)((missiles[r][n].cur_x+(CLICK/2)) / CLICK) 
+  hold_x = (int) (((long)((missiles[r][n].cur_x+(CLICK/2)) / CLICK)
 		   * f_width) / MAX_X);
-  hold_y = (int) (((long)((missiles[r][n].cur_y+(CLICK/2)) / CLICK) 
-                   * f_height) / MAX_Y);
+  hold_y = (int) (((long)((missiles[r][n].cur_y+(CLICK/2)) / CLICK)
+		   * f_height) / MAX_Y);
 
   for (c = 0; c < 9; c++) {
     new_x = hold_x + exp_pos[c].xx;
@@ -367,6 +351,7 @@ int n;
     new_y++;
 
     /* check for off of playfield */
+
     if (new_x <= 0 || new_x > f_width+1 || new_y <= 0 || new_y > f_height+1)
       continue;
 
@@ -376,7 +361,7 @@ int n;
 	continue;
       if (new_x == robots[i].last_x && new_y == robots[i].last_y) {
 	k = 0;
-	break;	  /* conflict */
+	break;    /* conflict */
       }
     }
     if (k) {
@@ -389,8 +374,8 @@ int n;
 
 
 /* robot_stat - update status info */
+void robot_stat(n)
 
-robot_stat(n)
 int n;
 {
   int changed = 0;
@@ -420,8 +405,8 @@ int n;
     changed = 1;
   }
 
-
-/*  move(5*n+3,col_1);
+/*
+  move(5*n+3,col_1);
   printw("%3d",robots[n].x / CLICK);
   move(5*n+3,col_2);
   printw("%3d",robots[n].y / CLICK);
@@ -432,11 +417,12 @@ int n;
 }
 
 
-show_cycle(l)
+
+void show_cycle(l)
 
 long l;
 {
-  move(LINES-2,col_3);
+  move(LINES-1-1,col_3);
   printw("%7d",10-ritardo);
   move(LINES-1,col_3);
   printw("%7ld",l);
