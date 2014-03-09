@@ -1,10 +1,14 @@
 CROBOTS
 =======
 
-This is the source code of the original CROBOTS game that I wrote in 1985, now
-released under GPLv2.   
+This is the source code of a fork of the original CROBOTS game that Tom Poindexter wrote in 1985, now
+released under GPLv2.
 
-I probably will **not** be updating CROBOTS, so feel free to fork the code.
+This is the v.1.1 patchlevel3.0 that officially runs on the latest Crobots tournaments (see http://crobots.deepthought.it).
+
+It includes the "zero-bug" fix, the 2000 instructions limit enhancement and an improved debugger.
+
+The Makefile works fine under Linux Ubuntu.
 
 Original Readme
 ---------------
