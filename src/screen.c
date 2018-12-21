@@ -13,9 +13,9 @@
 /*            change or modify this module for different systems */
 
 #include "crobots.h"
-#include <curses.h>
 
 #ifdef UNIX  /* anche se e' ovvio...*/
+#include <curses.h>
 int LINEE=21;
 #endif
 
@@ -163,7 +163,7 @@ void draw_field()
   col_3 = COLS - STAT_WID + 11;
 
   refresh();
-  
+
 }
 
 
@@ -220,9 +220,9 @@ int n;
   int i, k;
   register int new_x, new_y;
 
-  new_x = (int) (((long)((missiles[r][n].cur_x+(CLICK/2)) / CLICK) 
+  new_x = (int) (((long)((missiles[r][n].cur_x+(CLICK/2)) / CLICK)
 		  * f_width) / MAX_X);
-  new_y = (int) (((long)((missiles[r][n].cur_y+(CLICK/2)) / CLICK) 
+  new_y = (int) (((long)((missiles[r][n].cur_y+(CLICK/2)) / CLICK)
 		  * f_height) / MAX_Y);
   /* add one to x and y for playfield offset in screen, and inverse y */
   new_x++;
@@ -236,7 +236,7 @@ int n;
       if (robots[i].status == DEAD)
 	continue; /* inactive robot */
       if ((new_x == robots[i].last_x && new_y == robots[i].last_y)  ||
-          (missiles[r][n].last_xx == robots[i].last_x && 
+          (missiles[r][n].last_xx == robots[i].last_x &&
 	   missiles[r][n].last_yy == robots[i].last_y)) {
 	k = 0;
 	break;    /* conflict, robot in that position */
@@ -295,9 +295,9 @@ int n;
     else
       return;  /* continue to display explosion */
 
-  hold_x = (int) (((long)((missiles[r][n].cur_x+(CLICK/2)) / CLICK) 
+  hold_x = (int) (((long)((missiles[r][n].cur_x+(CLICK/2)) / CLICK)
 		   * f_width) / MAX_X);
-  hold_y = (int) (((long)((missiles[r][n].cur_y+(CLICK/2)) / CLICK) 
+  hold_y = (int) (((long)((missiles[r][n].cur_y+(CLICK/2)) / CLICK)
 		   * f_height) / MAX_Y);
 
   for (c = 0; c < 9; c++) {
@@ -313,8 +313,8 @@ int n;
 
     k = 1;
     for (i = 0; i < MAXROBOTS; i++) {
-      if (robots[i].status == DEAD) 
-	continue; 
+      if (robots[i].status == DEAD)
+	continue;
       if (new_x == robots[i].last_x && new_y == robots[i].last_y) {
 	k = 0;
 	break;    /* conflict */

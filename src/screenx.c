@@ -13,7 +13,7 @@
 /*            change or modify this module for different systems */
 
 #include "crobots.h"
-#include "math.h"
+#include <math.h>
 #include <curses.h>
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>

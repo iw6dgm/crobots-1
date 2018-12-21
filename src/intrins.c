@@ -14,11 +14,11 @@
 /* 0,0 = lower left, max_x,max_y = upper right; i.e., quadrant 1 */
 
 #include "crobots.h"
-#include "math.h"
+#include <math.h>
 #include <stdio.h>
 
 /* stack routines in cpu.c */
-extern long push();
+extern long push(long);
 extern long pop();
 
 /* radian to degrees conversion factor */
@@ -34,7 +34,7 @@ extern long pop();
 /* c_scan - radar scanning function - note degrees instead of radians */
 /*          expects two agruments on stack, degree and resoultion */
 
-void c_scan() 
+void c_scan()
 {
   register int i;
   long degree;
@@ -76,12 +76,12 @@ void c_scan()
       if (robots[i].y < cur_robot->y) {
 	if (robots[i].x > cur_robot->x)
 	  d = 360.0 + (RAD_DEG * atan(y / x)); /* relative quadrant 4 */
-	else 
+	else
 	  d = 180.0 + (RAD_DEG * atan(y / x)); /* relative quadrant 3 */
       } else {
 	if (robots[i].x > cur_robot->x)
 	  d = RAD_DEG * atan(y / x);           /* relative quadrant 1 */
-	else	   
+	else
 	  d = 180.0 + (RAD_DEG * atan(y / x)); /* relative quadrant 2 */
       }
     }
@@ -98,10 +98,10 @@ void c_scan()
       d2 = (180 + d)%360L + res;
     }
 
-    if (r_debug) 
+    if (r_debug)
       printf("\nscan: degree; %ld; bounds %ld, %ld; robot %d; deg %ld\n",
 	     degree,d1,d2,i,d);
-    
+
     if (dd >= d1 && dd <= d2) {
       /* this robot is within scan, so get his distance */
       distance = sqrt((x * x) + (y * y));
@@ -118,7 +118,7 @@ void c_scan()
 /* c_cannon - fire a shot */
 /*            expects two agruments on stack, degree distance */
 
-void c_cannon() 
+void c_cannon()
 {
   long degree;
   long distance;
@@ -128,7 +128,7 @@ void c_cannon()
   r = cur_robot - &robots[0];
 
   distance = pop();
-  if (distance > MIS_RANGE) 
+  if (distance > MIS_RANGE)
     distance = MIS_RANGE;
   else
     if (distance < 0L) {
@@ -170,12 +170,12 @@ void c_cannon()
       missiles[r][i].rang = (int) (distance * CLICK);
       missiles[r][i].curr_dist = 0;
       missiles[r][i].count = EXP_COUNT;
-      push(1L);  
+      push(1L);
       return;
     }
   }
 
-  push(0L);  
+  push(0L);
 
 }
 
@@ -183,10 +183,10 @@ void c_cannon()
 /* c_drive - start the propulsion system */
 /*           expect two agruments, degrees & speed */
 
-void c_drive() 
+void c_drive()
 {
   long degree;
-  long speed; 
+  long speed;
 
   speed = pop();
   if (speed < 0L)
@@ -206,7 +206,7 @@ void c_drive()
   /* update desired speed and heading */
   cur_robot->d_heading = (int) degree;
   cur_robot->d_speed = (int) speed;
-  
+
   push(1L);
 }
 
@@ -252,7 +252,7 @@ void c_rand()
   long limit;
 
   limit = pop();
-    
+
   if (limit <= 0L)
     push(0L);
   else
@@ -266,7 +266,7 @@ void c_rand()
 void c_sin()
 {
   long degree;
-  long lsin();
+  long lsin(long);
 
   degree = pop() % 360L;
   degree = (long) lsin(degree);
@@ -281,7 +281,7 @@ void c_sin()
 void c_cos()
 {
   long degree;
-  long lcos();
+  long lcos(long);
 
   degree = pop() % 360L;
   degree = (long) lcos(degree);

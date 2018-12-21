@@ -130,8 +130,7 @@ void end_disp()
 
 refresh() {}
 
-void move(y,x)
-int x,y;
+void move(int y,int x)
 {
   fflush (stdout);
   gotoxy(x+1,y+1);
@@ -214,9 +213,7 @@ void draw_field()
 
 /* plot_robot - plot the robot position */
 
-void plot_robot(n)
-
-int n;
+void plot_robot(int n)
 {
   int i, k;
   register int new_x, new_y;
@@ -256,10 +253,7 @@ int n;
 
 /* plot_miss - plot the missile position */
 
-void plot_miss(r,n)
-
-int r;
-int n;
+void plot_miss(int r,int n)
 {
   int i, k;
   register int new_x, new_y;
@@ -304,10 +298,7 @@ int n;
 
 /* plot_exp - plot the missile exploding */
 
-void plot_exp(r,n)
-
-int r;
-int n;
+void plot_exp(int r,int n)
 {
   int c, i, p, hold_x, hold_y, k;
   register int new_x, new_y;
@@ -374,9 +365,7 @@ int n;
 
 
 /* robot_stat - update status info */
-void robot_stat(n)
-
-int n;
+void robot_stat(int n)
 {
   int changed = 0;
 
@@ -418,9 +407,7 @@ int n;
 
 
 
-void show_cycle(l)
-
-long l;
+void show_cycle(long l)
 {
   move(LINES-1-1,col_3);
   printw("%7d",10-ritardo);

@@ -22,6 +22,7 @@ static char yysccsid[] = "@(#)yaccpar	1.9 (Berkeley) 02/21/93";
 /*****************************************************************************/
 
 #include <stdio.h>
+#include <string.h>
 #include "crobots.h"
 #include "compiler.h"
 

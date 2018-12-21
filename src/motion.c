@@ -119,14 +119,12 @@ long trig_tbl[91] = {
 
 /* sin look up */
 
-long lsin(deg)
-
-int deg;
+long lsin(long deg)
 {
   deg = deg % 360;
   if (deg < 0)
     deg = 360 + deg;
-  
+
   if (deg < 91)
     return (trig_tbl[deg]);
 
@@ -146,14 +144,12 @@ int deg;
 
 /* cos look up */
 
-long lcos(deg)
-
-int deg;
+long lcos(long deg)
 {
   deg = deg % 360;
   if (deg < 0)
     deg = 360 + deg;
-  
+
   if (deg < 91)
     return (trig_tbl[90-deg]);
 
@@ -184,11 +180,11 @@ struct {
 /* move_robots - update the postion of all robots */
 /*               parm 'displ' controls call to field display */
 
-void move_robots(displ)
-int displ;
+void move_robots(int displ)
 {
   register int i, n;
-  long lsin(), lcos();
+  long lsin(long), lcos(long);
+  int abs(int);
 
   for (i = 0; i < MAXROBOTS; i++) {
     if (robots[i].status == DEAD)
@@ -210,13 +206,13 @@ int displ;
     if (robots[i].speed != robots[i].d_speed) {
       if (robots[i].speed > robots[i].d_speed) { /* slowing */
 	robots[i].accel -= ACCEL;
-	if (robots[i].accel < robots[i].d_speed) 
+	if (robots[i].accel < robots[i].d_speed)
 	  robots[i].speed = robots[i].accel = robots[i].d_speed;
-	else 
+	else
 	  robots[i].speed = robots[i].accel;
       } else { /* accelerating */
 	robots[i].accel += ACCEL;
-	if (robots[i].accel > robots[i].d_speed) 
+	if (robots[i].accel > robots[i].d_speed)
 	  robots[i].speed = robots[i].accel = robots[i].d_speed;
 	else
   	  robots[i].speed = robots[i].accel;
@@ -230,7 +226,7 @@ int displ;
 	robots[i].range = 0;
 	robots[i].org_x = robots[i].x;
 	robots[i].org_y = robots[i].y;
-      } else 
+      } else
 	robots[i].d_speed = 0;
     }
 
@@ -267,7 +263,7 @@ int displ;
 	robots[i].damage += COLLISION;
       } else {
 	if (robots[i].x > MAX_X * CLICK) {
-	  robots[i].x = (MAX_X * CLICK) - 1; 
+	  robots[i].x = (MAX_X * CLICK) - 1;
 	  robots[i].speed = 0;
 	  robots[i].d_speed = 0;
 	  robots[i].damage += COLLISION;
@@ -280,7 +276,7 @@ int displ;
 	robots[i].damage += COLLISION;
       } else {
 	if (robots[i].y > MAX_Y * CLICK) {
-	  robots[i].y = (MAX_Y * CLICK) - 1; 
+	  robots[i].y = (MAX_Y * CLICK) - 1;
 	  robots[i].speed = 0;
 	  robots[i].d_speed = 0;
 	  robots[i].damage += COLLISION;
@@ -295,8 +291,7 @@ int displ;
 /* move_miss - updates all missile positions */
 /*             parm 'displ' control display */
 
-void move_miss(displ)
-int displ;
+void move_miss(int displ)
 {
   register int r, i;
   int n, j;
@@ -322,12 +317,12 @@ int displ;
 	  missiles[r][i].curr_dist = missiles[r][i].rang;
 
 	missiles[r][i].cur_x = x = (int) (missiles[r][i].beg_x + (int)
-	 (lcos(missiles[r][i].head) * (long)(missiles[r][i].curr_dist/CLICK) / 
+	 (lcos(missiles[r][i].head) * (long)(missiles[r][i].curr_dist/CLICK) /
 								10000L));
 	missiles[r][i].cur_y = y = (int) (missiles[r][i].beg_y + (int)
-  	 (lsin(missiles[r][i].head) * (long)(missiles[r][i].curr_dist/CLICK) / 
+  	 (lsin(missiles[r][i].head) * (long)(missiles[r][i].curr_dist/CLICK) /
 								10000L));
-		 
+
 	/* check for missiles hitting walls */
 	if (x < 0 ) {
 	  missiles[r][i].stat = EXPLODING;

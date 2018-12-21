@@ -10,102 +10,64 @@
 /*****************************************************************************/
 
 /* screen.c - low level screen display routines */
-/*	      change or modify this module for different systems */
+/*            change or modify this module for different systems */
+/* win32 - Visual C */
 
 extern long ritardo;
 
+
 #include <stdio.h>
-#include <dos.h>
-#include "crobots.h"
 #include <conio.h>
-#include <stdlib.h>
-/* structure passed on int86 call */
+#include <windows.h>
+#include "crobots.h"
 
-#ifdef bcc32
- union REGS {
-  struct {
-    short ax,bx,cx,dx,si,di;
-  } x;
-  struct {
-    char al,ah,bl,bh,cl,ch,dl,dh;
-  } h;
- };
-#endif
-
+#define addch  putchar
+#define printw printf
 
 #define COLS  80
 #define LINES 25
-clear()
+
+void gotoxy( int column, int line )
 {
-  union REGS r;
-  int intno = 0x10;	/* video bios call */
-
-  r.h.ah = 0x06;	/* scroll-up function */
-  r.h.al = 0;	/* entire window */
-  r.h.ch = 0;	/* upper left row */
-  r.h.cl = 0;	/* upper left col */
-  r.h.dh = 24;	/* lower right row */
-  r.h.dl = 79;	/* lower right col */
-  r.h.bh = 7;	/* normal attributes */
-  int86(intno,&r,&r);
-
+  COORD coord;
+  coord.X = column;
+  coord.Y = line;
+  SetConsoleCursorPosition(GetStdHandle( STD_OUTPUT_HANDLE ),coord);
 }
 
-move(int y, int x)
+int wherex()
 {
-  union REGS r;
-  int intno;
-
-  intno = 0x10; 	/* video bios call */
-  r.h.ah = 0x02;	/* set cursor position */
-  r.h.dh = y;
-  r.h.dl = x;
-  r.h.bh = 0;		/* page 0 */
-  fflush (stdout);
-  int86(intno,&r,&r);
-
-  intno = 0x21; 	/* dos call */
-  r.h.ah = 0xb; 	/* check keyboard and crtl-break */
-  int86(intno,&r,&r);
-
+  CONSOLE_SCREEN_BUFFER_INFO csbi;
+  COORD                      result;
+  if (!GetConsoleScreenBufferInfo(GetStdHandle( STD_OUTPUT_HANDLE ),&csbi)) return -1;
+  result=csbi.dwCursorPosition;
+  return result.X;
 }
 
-/* dummy refresh function */
-
-refresh() {}
-
-#ifdef LATTICE
-/* use lattice's console i/o routines instead of stdio */
-#define addch  putch
-#define printw cprintf
-#else
-/* use stdio i/o routines for xenix cross compiler */
-#define addch  putchar
-#define printw printf
-#endif
-
-/* init_disp - initialize display */
-
-void init_disp()
+int wherey()
 {
- if(ndebug)
-  textmode(C4350);
- else
-  textmode (C80);
-
-
-  clear();
-  draw_field();
+  CONSOLE_SCREEN_BUFFER_INFO csbi;
+  COORD                      result;
+  if (!GetConsoleScreenBufferInfo(GetStdHandle( STD_OUTPUT_HANDLE ),&csbi)) return -1;
+  result=csbi.dwCursorPosition;
+  return result.Y;
+}
+void clrscr()
+{
+  COORD  coord;
+  int lpNumberOfCharsWritten;
+  coord.X=0;
+  coord.Y=0;
+  FillConsoleOutputCharacter(GetStdHandle( STD_OUTPUT_HANDLE ),' ',COLS*LINES,coord,(PDWORD)&lpNumberOfCharsWritten);
 }
 
-
-/* end_disp - cleanup and end display */
-
-void end_disp() {
-  if(ndebug) {
-	textmode(C80);
-	clear();
-  }
+void clreol()
+{
+  COORD  coord;
+  int lpNumberOfCharsWritten;
+  coord.X=wherex();
+  coord.Y=wherey();
+  FillConsoleOutputCharacter(GetStdHandle( STD_OUTPUT_HANDLE ),' ',COLS-coord.X+1,coord,(PDWORD)&lpNumberOfCharsWritten);
 }
 
 
@@ -155,6 +117,37 @@ static int col_2;    /* column for scan & heading */
 static int col_3;    /* column for cpu cycle count*/
 
 
+/* init_disp - initialize display */
+
+void init_disp()
+{
+ if(ndebug)
+	system("mode con lines=50");
+ else
+	 system("mode con lines=26");
+
+  clrscr();
+  draw_field();
+}
+
+
+/* end_disp - cleanup and end display */
+
+void end_disp()
+{
+  if(ndebug){
+	system("mode con lines=25");
+  }
+}
+
+void refresh() {}
+
+void move(int y,int x)
+{
+  fflush (stdout);
+  gotoxy(x+1,y+1);
+}
+
 
 /* draw_field - draws the playing field and status boxes */
 
@@ -164,7 +157,7 @@ void draw_field()
 
   /* init fixed screen data; 0,0 is top left, LINES-1,COLS-1 is lower right */
   f_width = COLS - STAT_WID - 3;  /* columns available */
-  f_height= LINES - 3;		  /* lines available */
+  f_height= LINES - 3;            /* lines available */
 
 
   /* top line */
@@ -204,14 +197,17 @@ void draw_field()
     printw("  D%%       Sc    ");
     move(5*i+2,COLS-STAT_WID);
     printw("  Sp       Hd    ");
-
+/*
+    move(5*i+3,COLS-STAT_WID);
+    printw("  X=       Y=    ");
+*/
     if (i < MAXROBOTS-1) {
       move(5*i+4,COLS-STAT_WID);
       for (j = 0; j < 19; j++)
 	addch(HORZ);
     }
   }
-  move(LINES-2,COLS-STAT_WID);
+  move(LINES-1-1,COLS-STAT_WID);
   printw(" Speed:           ");
   move(LINES-1,COLS-STAT_WID);
   printw(" CPU Cycle:       ");
@@ -249,7 +245,7 @@ void plot_robot(int n)
 	continue; /* same robot as n or inactive */
       if (new_x == robots[i].last_x && new_y == robots[i].last_y) {
 	k = 0;
-	break;	  /* conflict, robot in that position */
+	break;    /* conflict, robot in that position */
       }
     }
     if (k) {
@@ -293,11 +289,11 @@ void plot_miss(int r,int n)
 	  (missiles[r][n].last_xx == robots[i].last_x &&
 	   missiles[r][n].last_yy == robots[i].last_y)) {
 	k = 0;
-	break;	  /* conflict, robot in that position */
+	break;    /* conflict, robot in that position */
       }
     }
     if (k) {
-      if (missiles[r][n].last_yy > 1) {
+      if (missiles[r][n].last_yy > 0) {
 	move(missiles[r][n].last_yy,missiles[r][n].last_xx);
 	addch(' ');
       }
@@ -330,11 +326,11 @@ void plot_exp(int r,int n)
       if (missiles[r][n].last_xx == robots[i].last_x &&
 	  missiles[r][n].last_yy == robots[i].last_y) {
 	k = 0;
-	break;	  /* conflict, robot in that position */
+	break;    /* conflict, robot in that position */
       }
     }
     if (k) {
-      if (missiles[r][n].last_yy > 1) {
+      if (missiles[r][n].last_yy > 0) {
 	move(missiles[r][n].last_yy,missiles[r][n].last_xx);
 	addch(' ');
       }
@@ -349,7 +345,7 @@ void plot_exp(int r,int n)
   hold_x = (int) (((long)((missiles[r][n].cur_x+(CLICK/2)) / CLICK)
 		   * f_width) / MAX_X);
   hold_y = (int) (((long)((missiles[r][n].cur_y+(CLICK/2)) / CLICK)
-                   * f_height) / MAX_Y);
+		   * f_height) / MAX_Y);
 
   for (c = 0; c < 9; c++) {
     new_x = hold_x + exp_pos[c].xx;
@@ -358,6 +354,7 @@ void plot_exp(int r,int n)
     new_y++;
 
     /* check for off of playfield */
+
     if (new_x <= 0 || new_x > f_width+1 || new_y <= 0 || new_y > f_height+1)
       continue;
 
@@ -367,7 +364,7 @@ void plot_exp(int r,int n)
 	continue;
       if (new_x == robots[i].last_x && new_y == robots[i].last_y) {
 	k = 0;
-	break;	  /* conflict */
+	break;    /* conflict */
       }
     }
     if (k) {
@@ -380,7 +377,6 @@ void plot_exp(int r,int n)
 
 
 /* robot_stat - update status info */
-
 void robot_stat(int n)
 {
   int changed = 0;
@@ -410,8 +406,8 @@ void robot_stat(int n)
     changed = 1;
   }
 
-
-/*  move(5*n+3,col_1);
+/*
+  move(5*n+3,col_1);
   printw("%3d",robots[n].x / CLICK);
   move(5*n+3,col_2);
   printw("%3d",robots[n].y / CLICK);
@@ -422,12 +418,11 @@ void robot_stat(int n)
 }
 
 
-show_cycle(l)
 
-long l;
+void show_cycle(long l)
 {
-  move(LINES-2,col_3);
-  printw("%7d",10-ritardo);
+  move(LINES-1-1,col_3);
+  printw("%7ld",10-ritardo);
   move(LINES-1,col_3);
   printw("%7ld",l);
   refresh();

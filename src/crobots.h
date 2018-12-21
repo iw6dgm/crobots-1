@@ -15,6 +15,9 @@
 #define UNIX    1
 /*#define __MSDOS__ 1*/
 /*#define bcc32 1*/
+/*define w64 1*/
+
+#include <stdint.h>
 
 
 /* note-the INIT flag (or lack of it) causes extern for all but one module */
@@ -22,6 +25,7 @@
 #define ILEN      8		/* length of identifiers, also in lexanal.l */
 #define MAXSYM    128    /* maximum number of symbol table entries per pool */
 #define MAXROBOTS 4		/* maximum number of robots */
+#define MAXROBOTNAMELEN	14
 #define CODESPACE 2000		/* maximum number of machine instructions */
 #define DATASPACE 2000		/* maximum number of data stack entries */
 #define MOTION_CYCLES 15 	/* number of cycles before motion update */
@@ -35,7 +39,7 @@
 
 struct robot {			/* robot context */
   int status;			/* status of robot, active or dead */
-  char name[14];		/* name of robot */
+  char name[MAXROBOTNAMELEN];	/* name of robot */
   int x;			/* current x location * 100 */
   int y;			/* current y location * 100 */
   int org_x;			/* orgin x location * 100 */
@@ -55,7 +59,7 @@ struct robot {			/* robot context */
   int scan;			/* current scan direction */
   int last_scan;		/* last scan direction */
   int reload;			/* number of cycles between reloading */
-  int ext_count;		/* size of external pool needed */
+  int32_t ext_count;		/* size of external pool needed */
   long *external;		/* external variable pool */
   char *vnames;     		/*store external variables*/
   long *local;			/* current local variables on stack */
@@ -69,32 +73,59 @@ struct robot {			/* robot context */
   struct instr *ip;		/* instruction pointer */
 };
 
+
+//struct func {			/* function header */
+//	struct func *nextfunc;	/* next function header in chain */
+//	char func_name[ILEN];		/* function name */
+//	char *vnames;     		/*store local variables*/
+//	struct instr *first;		/* first instruction pointer */
+//	int var_count;		/* number of pool variables needed */
+//	int par_count;		/* number of parameters expected */
+//};
+
 struct func {			/* function header */
-  struct func *nextfunc;	/* next function header in chain */
-  char func_name[ILEN];		/* function name */
-  char *vnames;     		/*store local variables*/
-  struct instr *first;		/* first instruction pointer */
-  int var_count;		/* number of pool variables needed */
-  int par_count;		/* number of parameters expected */
+	int64_t nextfunc;	/* next function header in chain */
+	char func_name[ILEN];		/* function name */
+	int64_t vnames;     		/*store local variables*/
+	int64_t first;		/* first instruction pointer */
+	int32_t var_count;		/* number of pool variables needed */
+	int32_t par_count;		/* number of parameters expected */
 };
 
-struct instr {			/* robot machine instruction */
-  char ins_type;		/* instruction type */
-  union {
-    long k;			/* constant value */
-    long var1;		/* variable offset, function offset, operator */
-    struct instr *br;		/* false branch */
-    struct {
+//struct instr {			/* robot machine instruction */
+//  char ins_type;		/* instruction type */
+//  union {
+//	int64_t k;			/* constant value */
+//	int64_t var1;		/* variable offset, function offset, operator */
+//    struct intstr *br;			/* false branch */
+//    struct {
 #ifdef UNIX
-      long var2;		/* assignment variable offset */
-      long a_op;		/* assignment operator */
+//	int64_t var2;		/* assignment variable offset */
+//	int64_t a_op;		/* assignment operator */
+#elif w64
+//	int64_t var2;		/* assignment variable offset */
+//	int64_t a_op;		/* assignment operator */
 #else
-      int var2;           /* assignment variable offset */
-      int a_op;           /* assignment operator */
+//    int var2;           /* assignment variable offset */
+//    int a_op;           /* assignment operator */
 #endif
-    } a;
-  } u;
+//    } a;
+//  } u;
+//};
+
+struct instr {			/* robot machine instruction */
+	int64_t ins_type;		/* instruction type */
+	union {
+		int64_t k;			/* constant value */
+		int64_t var1;		/* variable offset, function offset, operator */
+		int64_t br;			/* false branch */
+		struct {
+			int64_t var2;		/* assignment variable offset */
+			int64_t a_op;		/* assignment operator */
+		} a;
+	} u;
 };
+
 
 /* ap.c constants*/
 #define  VELOCE  ( 0 )
@@ -179,7 +210,7 @@ int r_debug,			/* debug switch */
 #define DIRECT_RANGE 5
 #define NEAR_RANGE   20
 #define FAR_RANGE    40
-  
+
 /* declare the intrinsic functions, all must push a long value on the stack */
 void c_scan();    /* scan(degree,res);  >0 = robot distance, 0 = nothing */
 void c_cannon();  /* cannon(degree,dist); fire cannon */
@@ -227,13 +258,13 @@ struct intrin {
 
 /*definitions*/
 void ap_main();
-int poolsize(char *);
-long findvar(char *, char *);
-long allocvar(char *, char *);
+int32_t poolsize(char *);
+long findvar(char [], char *);
+long allocvar(char [], char *);
 void dumpoff(char *);
 void decompile(struct instr*);
 void decinstr(struct instr*);
-void printop(int);
+void printop(int64_t);
 void loadrobot(char *);
 void init_robot(int);
 void init_comp();
@@ -243,7 +274,6 @@ void binaryop(int);
 void robot_go(struct robot*);
 void dumpvar(long *,int);
 void warn();
-/*void move(int, int);*/
 void miss_dat(int);
 void dvar(char *,long *,int);
 void dlocal(char *, long*);
@@ -259,9 +289,9 @@ void draw_field();
 void rand_pos(int);
 void free_robot(int);
 void tracef(char *);
-void match(int,long,char **,int);
-void play(char **,int);
-void comp(char **,int);
+void match(int,long,char *[],int);
+void play(char *[],int);
+void comp(char *[],int);
 void init_disp();
 void update_disp();
 void cycle();
@@ -269,7 +299,14 @@ void move_robots(int);
 void move_miss(int);
 void show_cycle(long);
 void end_disp();
-
+void gotoxy(int, int);
+int wherex();
+int wherey();
+void clrscr();
+void clreol();
+#ifndef UNIX
+void move(int, int);
+#endif
 
 
 

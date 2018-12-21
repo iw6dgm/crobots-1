@@ -3,7 +3,7 @@
 			     -------------------
     begin                : Fri Oct 13 2000
     copyright            : (C) 2000 by
-    email                : 
+    email                :
  ***************************************************************************/
 
 /***************************************************************************
@@ -37,6 +37,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+
 #ifdef UNIX
 	#include <curses.h>
 	#define clreol clrtoeol
@@ -46,6 +47,7 @@
 	/*#endif*/
 #else
 	#include <dos.h>
+	#include <conio.h>
 	#define COLS  80
 	#define LINES 25
 	#define printw printf
@@ -66,8 +68,7 @@ extern char *nuxx;
 static int livello;
 static int intra;
 
-void debug_par(n)
-int n;
+void debug_par(int n)
 {
   col_1 = COLS - STAT_WID + 5;
   col_2 = COLS - STAT_WID + 14;
@@ -92,10 +93,7 @@ int n;
 
 /* varnamefind - return the name of a variable in a pool by offset*/
 
-char* varnamefind(s,pool)
-
-int s;
-char *pool;
+char* varnamefind(int s,char *pool)
 {
 	return (&(pool[s * ILEN]));
 }
@@ -108,14 +106,17 @@ struct func* funcfind(char* name)
 		if(!strcmp(name,temp->func_name)) {
 			return temp;
 		}
-		else temp=temp->nextfunc;
+		else temp=(struct func*)temp->nextfunc;
 	}
 	return robots[0].code_list;
 }
 
 void dlocal(char *name, long* pool1)
 {
-	register int i,y,x;
+	register int i,y;
+#ifdef linux
+    int x;
+#endif // linux
 	struct func* temp;
 	static char oldname[80];
 
@@ -134,16 +135,16 @@ void dlocal(char *name, long* pool1)
 		printw("\nFunction: %8s Local symbol table\n",name);
 
 		i=0;
-		while((temp->vnames[i*ILEN])!='\0') {
+		while(*(&temp->vnames+i*ILEN*sizeof(int64_t))!='\0') {
 #ifdef linux
 			getyx(stdscr,y,x);
 			if(x>70) printw("\n");
 #else
 			if(wherex()>70) printw("\n");
 #endif
-			for (y = 0; (*intrinsics[y].n != '\0') && (strcmp(intrinsics[y].n,varnamefind(i,temp->vnames))); y++);
+			for (y = 0; (*intrinsics[y].n != '\0') && (strcmp(intrinsics[y].n,varnamefind(i,(char *)temp->vnames))); y++);
 			if(*intrinsics[y].n=='\0') {
-				printw("%8s:",varnamefind(i,temp->vnames));
+				printw("%8s:",varnamefind(i, (char *)temp->vnames));
 				printw(" %8ld ",*(pool1 + i++));
 			} else i++;
 		}
@@ -151,10 +152,7 @@ void dlocal(char *name, long* pool1)
 }
 
 
-void dvar(pool,pool1,size)
-char *pool;
-long *pool1;
-int size;
+void dvar(char *pool,long *pool1,int size)
 {
   int j;
   register int i;
@@ -186,8 +184,7 @@ int size;
   }
 }
 
-void miss_dat(n)
-int n;
+void miss_dat(int n)
 {
 	int rel;
 	printw("miss_stat  %7d",missiles[cur_robot-&robots[n]][0].stat);
@@ -209,18 +206,16 @@ int n;
 	printw("\nrel. time  %7ld\n",rel);
 }
 
-void showinstr(code,n)
-struct instr *code;
-int n;
+void showinstr(struct instr *code,int n)
 {
 
   printw("%8ld : ",(long) code);	/* this could be flakey */
   switch (code->ins_type) {
     case FETCH:
       if (code->u.var1 & EXTERNAL)
-	printw("fetch   %s ext",varnamefind(code->u.var1 & ~EXTERNAL,robots[n].vnames));
+	printw("fetch   %s ext",varnamefind((int)code->u.var1 & ~EXTERNAL,robots[n].vnames));
       else
-	printw("fetch   %s local",varnamefind(code->u.var1, funcfind(nuxx)->vnames));
+	printw("fetch   %s local",varnamefind((int)code->u.var1, (char *)funcfind(nuxx)->vnames));
 
       break;
     case STORE:
@@ -228,11 +223,11 @@ int n;
 	printw("store   %s ext, ",
 		varnamefind(code->u.a.var2 & ~EXTERNAL,robots[n].vnames));
       else
-	printw("store   %s local, ",varnamefind(code->u.a.var2, funcfind(nuxx)->vnames));
-      newprint(code->u.a.a_op);
+	printw("store   %s local, ",varnamefind((int)code->u.a.var2, (char *)funcfind(nuxx)->vnames));
+      newprint((int)code->u.a.a_op);
       break;
     case CONST:
-      printw("const   %ld",code->u.k);
+      printw("const   %I64d",code->u.k);
       break;
     case BINOP:
       printw("binop ");
@@ -265,9 +260,7 @@ int n;
 
 /* newprint - print a binary operation code */
 
-void newprint(op)
-
-int op;
+void newprint(int op)
 {
 
   switch (op) {
