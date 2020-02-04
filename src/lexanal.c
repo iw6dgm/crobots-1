@@ -1,5 +1,6 @@
-# include "stdio.h"
+#include <stdio.h>
 #include <string.h>
+#include <stdint.h>
 
 # define U(x) x
 # define NLSTATE yyprevious=YYNEWLINE
@@ -893,7 +894,7 @@ int yylook(){
 		yyestate = yystate = yybgin;
 		if (yyprevious==YYNEWLINE) yystate++;
 		for (;;){
-			if(odebug)fprintf(yyout,"state %d\n",yystate-yysvec-1);
+			if(odebug)fprintf(yyout,"state %ld\n",yystate-yysvec-1);
 			yyt = yystate->yystoff;
 			if(yyt == yycrank && !yyfirst){  /* may not be any transitions */
 				yyz = yystate->yyother;
@@ -909,7 +910,7 @@ int yylook(){
 				putchar('\n');
 				}
 			yyr = yyt;
-			if ( (int)yyt > (int)yycrank){
+			if ( (int)(uintptr_t)yyt > (int)(uintptr_t)yycrank){
 				yyt = yyr + yych;
 				if (yyt <= yytop && yyt->verify+yysvec == yystate){
 					if(yyt->advance+yysvec == YYLERR)	/* error transitions */
@@ -918,7 +919,7 @@ int yylook(){
 					goto contin;
 					}
 				}
-			else if((int)yyt < (int)yycrank) {		/* r < yycrank */
+			else if((int)(uintptr_t)yyt < (int)(uintptr_t)yycrank) {		/* r < yycrank */
 				yyt = yyr = yycrank+(yycrank-yyt);
 				if(odebug)fprintf(yyout,"compressed state\n");
 				yyt = yyt + yych;
@@ -942,21 +943,21 @@ int yylook(){
 					}
 				}
 			if ((yystate = yystate->yyother) && (yyt= yystate->yystoff) != yycrank){
-				if(odebug)fprintf(yyout,"fall back to state %d\n",yystate-yysvec-1);
+				if(odebug)fprintf(yyout,"fall back to state %ld\n",yystate-yysvec-1);
 				goto tryagain;
 				}
 			else
 				{unput(*--yylastch);break;}
 		contin:
 			if(odebug){
-				fprintf(yyout,"state %d char ",yystate-yysvec-1);
+				fprintf(yyout,"state %ld char ",yystate-yysvec-1);
 				allprint(yych);
 				putchar('\n');
 				}
 			;
 			}
 		if(odebug){
-			fprintf(yyout,"stopped at %d with ",*(lsp-1)-yysvec-1);
+			fprintf(yyout,"stopped at %ld with ",*(lsp-1)-yysvec-1);
 			allprint(yych);
 			putchar('\n');
 			}

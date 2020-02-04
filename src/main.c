@@ -15,6 +15,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 /* INIT causes externals in crobots.h to have storage, & init intrinsic table */
 #define INIT 1
@@ -41,7 +42,7 @@ extern unsigned _stklen = 8000U;
 FILE *f_in;
 FILE *f_out;
 
-char *version   = "CROBOTS - version 1.1, PatchLevel3.0\n";
+char *version   = "CROBOTS - version 1.1, PatchLevel3.4\n";
 char *copyright = "Copyright 1985-2007 by Tom Poindexter, All rights reserved.\n";
 int garbage=0;
 
@@ -122,14 +123,13 @@ char *argv[];
 	  else bpoint="";
 	  break;
 
-
-	/*Noheader*/
-#ifdef __MSDOS__
+	/*Noheader - Quiet mode*/
+//#ifdef __MSDOS__
 	case 'g':
 	case 'G':
 	  garbage = 1;
 	  break;
-#endif
+//#endif
 
 	default:
 	  break;
@@ -144,8 +144,6 @@ char *argv[];
 	  num_robots++;
 	} else {
 	  fprintf(stderr,"%s: robot source file `%s' not found\n",prog, argv[i]);
-	  printf("Press <enter> to continue......");
-	  getchar();
 	  printf("\n");
 	}
       } else {
@@ -155,35 +153,13 @@ char *argv[];
 
   }
 
-  /* print version, copyright notice, shareware info */
-if (!garbage)
-{
-  fprintf(stderr,"\n");
-  fprintf(stderr,version);
-  fprintf(stderr,copyright);
-  fprintf(stderr,"\n     CROBOTS - fighting robots C compiler and virtual computer\n");
-  fprintf(stderr,"             YASP - Yet Another Shareware Program\n");
-  fprintf(stderr,"\n");
-  fprintf(stderr,"       Support shareware!  You should make a payment to\n");
-  fprintf(stderr,"       the author if you decide to keep this software.\n");
-  fprintf(stderr,"       A $20.00 payment is suggested.  For payments of $20.00\n");
-  fprintf(stderr,"       or more, you will receive the full source code of this\n");
-  fprintf(stderr,"       program.  See the documentation for order forms.  \n");
-  fprintf(stderr,"       In any case, you may copy and distribute this program\n");
-  fprintf(stderr,"       provided that:\n");
-  fprintf(stderr,"         1) It is distributed in its original form, and all\n");
-  fprintf(stderr,"            copyrights and notices are preserved.\n");
-  fprintf(stderr,"         2) All documentation and sample files remain with\n");
-  fprintf(stderr,"            the program.\n");
-  fprintf(stderr,"\n");
-  fprintf(stderr,"                 Tom Poindexter\n");
-  fprintf(stderr,"                 2903 Winchester Drive\n");
-  fprintf(stderr,"                 Bloomington, Illinois 61701\n");
-  fprintf(stderr,"\n");
-  fprintf(stderr,"Press <enter> to continue......");
-  getchar();
-  fprintf(stderr,"\n");
-}
+  /* print version, copyright notice */
+  if (!garbage)
+  {
+    fprintf(stderr,"%s",version);
+    fprintf(stderr,"%s",copyright);
+    fprintf(stderr,"\n");
+  }
 
   /* make sure there is at least one robot at this point */
   if (num_robots == 0) {
@@ -321,7 +297,7 @@ int n;
       if (s == (char *) NULL)
 	  s = f[i];
 
-      strcpy(robots[num_robots].name,s);
+      strncpy(robots[num_robots].name,s,MAXROBOTNAMELEN);
 
 	  s=robots[num_robots].name;	/*questo serve per mettere in output sempre .r*/
 	  if(tolower(s[strlen(s)-1])!='r') s[strlen(s)-1]=0;
@@ -399,6 +375,8 @@ int n;
       break;
   }
 
+  end_disp();
+
   k = 0;
   for (i = 0; i < MAXROBOTS; i++) {
     if (robots[i].status == ACTIVE) {
@@ -413,7 +391,6 @@ int n;
     fprintf(stdout,"\r\nIt's a draw\r\n");
   }
 
-  end_disp();
   exit(0);
 
 }
@@ -476,7 +453,7 @@ int n;
 #endif
       if (s == (char *) NULL)
 	  s = f[i];
-      strcpy(robots[num_robots].name,s);
+      strncpy(robots[num_robots].name,s,MAXROBOTNAMELEN);
 
 	  s=robots[num_robots].name;	/*questo serve per mettere in output sempre .r*/
 	  if(tolower(s[strlen(s)-1])!='r') s[strlen(s)-1]=0;
@@ -555,7 +532,7 @@ int n;
     k = 0;
     for (i = 0; i < num_robots; i++) {
       if (robots[i].status == ACTIVE) {
-	printf("   (%d)%14s: damage=%% %d  ",i+1,robots[i].name,
+	printf("   (%d)%*s: damage=%% %d  ",i+1,MAXROBOTNAMELEN,robots[i].name,
 		robots[i].damage);
 	if (i == 1)
 	  printf("\n");
@@ -579,7 +556,7 @@ int n;
 	else
 	  ties[i]++;
       }
-      printf("   (%d)%14s: wins=%d ties=%d  ",i+1,robots[i].name,
+      printf("   (%d)%*s: wins=%d ties=%d  ",i+1,MAXROBOTNAMELEN,robots[i].name,
 	      wins[i],ties[i]);
       if (i == 1)
 	printf("\n");

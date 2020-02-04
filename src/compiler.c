@@ -226,7 +226,7 @@ int reset_comp()
 
     if (!found) {
       fprintf(f_out,
-   "\n** Error ** '%s (%d)' function referenced, but not defined or intrinsic\n",
+   "\n** Error ** '%s (%ld)' function referenced, but not defined or intrinsic\n",
 	(func_tab + (i * ILEN)),i);
       good =0;
       r_flag = 1;
@@ -476,7 +476,7 @@ char *pool;
   for (i = 0; i < MAXSYM; i++) {
     if (*(pool + (i * ILEN)) == '\0')
       return;
-    fprintf(f_out,"%4d : %-8s  ",i,pool + (i * ILEN));
+    fprintf(f_out,"%4ld : %-8s  ",i,pool + (i * ILEN));
     if (++count == 4) {
       fprintf(f_out,"\n");
       count = 0;
@@ -784,16 +784,16 @@ struct instr *code;
   switch (code->ins_type) {
     case FETCH:
       if (code->u.var1 & EXTERNAL)
-	fprintf(f_out,"fetch   %d external\n",code->u.var1 & ~EXTERNAL);
+	fprintf(f_out,"fetch   %ld external\n",code->u.var1 & ~EXTERNAL);
       else
-	fprintf(f_out,"fetch   %d local\n",code->u.var1);
+	fprintf(f_out,"fetch   %ld local\n",code->u.var1);
       break;
     case STORE:
       if (code->u.a.var2 & EXTERNAL)
-	fprintf(f_out,"store   %d external, ",
+	fprintf(f_out,"store   %ld external, ",
 		code->u.a.var2 & ~EXTERNAL);
       else
-	fprintf(f_out,"store   %d local, ",code->u.a.var2);
+	fprintf(f_out,"store   %ld local, ",code->u.a.var2);
       printop(code->u.a.a_op);
       fprintf(f_out,"\n");
       break;
@@ -806,7 +806,7 @@ struct instr *code;
       fprintf(f_out,"\n");
       break;
     case FCALL:
-      fprintf(f_out,"fcall   %d\n",code->u.var1);
+      fprintf(f_out,"fcall   %ld\n",code->u.var1);
       break;
     case RETSUB:
       fprintf(f_out,"retsub\n");

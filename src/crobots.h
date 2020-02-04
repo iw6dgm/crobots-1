@@ -22,6 +22,7 @@
 #define ILEN      8		/* length of identifiers, also in lexanal.l */
 #define MAXSYM    128    /* maximum number of symbol table entries per pool */
 #define MAXROBOTS 4		/* maximum number of robots */
+#define MAXROBOTNAMELEN	14
 #define CODESPACE 2000		/* maximum number of machine instructions */
 #define DATASPACE 2000		/* maximum number of data stack entries */
 #define MOTION_CYCLES 15 	/* number of cycles before motion update */
@@ -35,7 +36,7 @@
 
 struct robot {			/* robot context */
   int status;			/* status of robot, active or dead */
-  char name[14];		/* name of robot */
+  char name[MAXROBOTNAMELEN];	/* name of robot */
   int x;			/* current x location * 100 */
   int y;			/* current y location * 100 */
   int org_x;			/* orgin x location * 100 */

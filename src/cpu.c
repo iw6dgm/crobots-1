@@ -292,11 +292,11 @@ void cycle()
       dumpvar(cur_robot->external,cur_robot->ext_count);
       printf("\nlocal stack");
       dumpvar(cur_robot->local,cur_robot->stackptr - cur_robot->local + 1);
-      printf("\n\nx...........%7ld",cur_robot->x);
-      printf("\ty...........%7ld",cur_robot->y);
-      printf("\norg_x.......%7ld",cur_robot->org_x);
-      printf("\torg_y.......%7ld",cur_robot->org_y);
-      printf("\nrange.......%7ld",cur_robot->range);
+      printf("\n\nx...........%7d",cur_robot->x);
+      printf("\ty...........%7d",cur_robot->y);
+      printf("\norg_x.......%7d",cur_robot->org_x);
+      printf("\torg_y.......%7d",cur_robot->org_y);
+      printf("\nrange.......%7d",cur_robot->range);
       printf("\tspeed.......%7d",cur_robot->speed);
       printf("\nd_speed.....%7d",cur_robot->d_speed);
       printf("\theading.....%7d",cur_robot->heading);
@@ -306,10 +306,10 @@ void cycle()
       printf("\tmiss[1]stat.%7d",missiles[cur_robot-&robots[0]][1].stat);
       printf("\nmiss[0]head.%7d",missiles[cur_robot-&robots[0]][0].head);
       printf("\tmiss[1]head.%7d",missiles[cur_robot-&robots[0]][1].head);
-      printf("\nmiss[0]x....%7ld",missiles[cur_robot-&robots[0]][0].cur_x);
-      printf("\tmiss[1]y....%7ld",missiles[cur_robot-&robots[0]][1].cur_y);
-      printf("\nmiss[0]dist.%7ld",missiles[cur_robot-&robots[0]][0].curr_dist);
-      printf("\tmiss[1]dist.%7ld",missiles[cur_robot-&robots[0]][1].curr_dist);
+      printf("\nmiss[0]x....%7d",missiles[cur_robot-&robots[0]][0].cur_x);
+      printf("\tmiss[1]y....%7d",missiles[cur_robot-&robots[0]][1].cur_y);
+      printf("\nmiss[0]dist.%7d",missiles[cur_robot-&robots[0]][0].curr_dist);
+      printf("\tmiss[1]dist.%7d",missiles[cur_robot-&robots[0]][1].curr_dist);
       printf("\n\n");
       getchar();
     } else {
