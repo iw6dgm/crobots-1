@@ -2,8 +2,8 @@
                           ap.c  -  description
                              -------------------
     begin                : Sun Oct 15 2000
-    copyright            : (C) 2000 by 
-    email                : 
+    copyright            : (C) 2000 by
+    email                :
  ***************************************************************************/
 
 /***************************************************************************
@@ -20,14 +20,16 @@
 
 #include <stdio.h>
 #include "crobots.h"
-#ifdef __MSDOS__
+
+#if defined(__MSDOS__) || defined(w64)
 #include <conio.h>
 #else
 #include <stdlib.h>
 #include <string.h>
+#ifndef w64
 #include <termio.h>
 #endif
-
+#endif
 
 #define LATENCY 700000
 char buffer[2];
@@ -81,7 +83,11 @@ void ap_main()
 		for (n=0;n<MAXROBOTS;n++) robots[n].status=DEAD;
 	if(ndebug) UPDATE_CYCLES=1;
 	else UPDATE_CYCLES=46-ritardo*5;
+#ifdef w64
+	_sleep(ritardo*LATENCY / 200000);
+#else
 	for (n=1;n<(ritardo*LATENCY);++n);
+#endif
 #ifdef UNIX
 	ioctl(0,TCSETA,&t_old);     /* rimetto a posto il terminale                */
 #endif

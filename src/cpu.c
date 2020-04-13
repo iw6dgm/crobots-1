@@ -22,13 +22,13 @@
 /* push - basic stack push mechanism */
 /*         depends on cur_robot, set r_flag on overflow */
 
-long push(k)
-
-long k;
+long push(long k)
 {
   /* increment stack and check for collistion into return ptrs */
   if (++cur_robot->stackptr == cur_robot->retptr) {
     r_flag = 1;  /* signal a stack overflow, i.e., collision into returns */
+	if (r_debug)
+		printf("\nStack overflow\n");
     return(0L);
   }
   *cur_robot->stackptr = k;
@@ -44,7 +44,9 @@ long pop()
   long v;
   if (cur_robot->stackptr == cur_robot->stackbase) {
     r_flag = 1;  /* signal a stack underflow */
-    return (0L);
+	if (r_debug)
+		printf("\nStack overflow\n");
+	return (0L);
   }
   v = *cur_robot->stackptr;
   cur_robot->stackptr--;
@@ -68,21 +70,21 @@ void cycle()
   struct func *f;
   register char *n;
   struct instr **i;
-  long **l;
-  long push();
-  long pop();
-
+  int64_t** l;
+//  long push();
+//  long pop();
 
   cur_instr = cur_robot->ip;
 
-  if (r_debug) 
+  if (r_debug)
     decinstr(cur_instr);
+
 
   switch(cur_instr->ins_type) {
 
     case FETCH:		/* push a value from a variable pool */
 
-      if (cur_instr->u.var1 & EXTERNAL) 
+      if (cur_instr->u.var1 & EXTERNAL)
 	push(*(cur_robot->external + (cur_instr->u.var1 & ~EXTERNAL)));
       else
 	push(*(cur_robot->local + cur_instr->u.var1));
@@ -92,25 +94,25 @@ void cycle()
 
     case STORE:		/* store tos in a variable pool */
 
-      binaryop(cur_instr->u.a.a_op);	/* perform assignment operation */
-      if (cur_instr->u.a.var2 & EXTERNAL) 
+      binaryop((int)cur_instr->u.a.a_op);	/* perform assignment operation */
+      if (cur_instr->u.a.var2 & EXTERNAL)
 	*(cur_robot->external +(cur_instr->u.a.var2 & ~EXTERNAL)) = push(pop());
       else
 	*(cur_robot->local + cur_instr->u.var1) = push(pop());
       cur_robot->ip++;
       break;
 
-      
-    case CONST:		/* push a constant */
 
-      push(cur_instr->u.k);
+    case CST:		/* push a constant */
+
+      push((long)cur_instr->u.k);
       cur_robot->ip++;
       break;
 
 
     case BINOP:		/* do a binary operation */
 
-      binaryop(cur_instr->u.var1);
+      binaryop((int)cur_instr->u.var1);
       cur_robot->ip++;
       break;
 
@@ -123,77 +125,77 @@ void cycle()
       for (j = 0; *intrinsics[j].n != '\0'; j++) {
         if (r_debug)
           printf("\nfunc %s found %s\n",n,intrinsics[j].n);
-	if (strcmp(intrinsics[j].n,n) == 0) {
-	  (*intrinsics[j].f)();  	/* call the intrinsic function */
-	  value = pop(); 		/* get return value */
+	    if (strcmp(intrinsics[j].n,n) == 0) {
+	      (*intrinsics[j].f)();  	/* call the intrinsic function */
+	      value = pop(); 		/* get return value */
 
           /* re-frame stack to ensure we discard all expressions */
-          l = (long **) cur_robot->retptr++;
+          l = (int64_t **) cur_robot->retptr++;
           cur_robot->stackptr = *l;
 
-	  pop();  			/* get rid of bogus function value */
-	  push(value);  		/* put return value on stack */
+	      pop();  			/* get rid of bogus function value */
+	      push(value);  		/* put return value on stack */
           cur_robot->ip++;
-	  called = 1;
-	  break;
-	}
+	      called = 1;
+	      break;
+	    }
       }
 
       if (!called) {
-	/* find coded function by name */
-	/* search through function headers */
-	for (f=cur_robot->code_list; f != (struct func *) 0; f=f->nextfunc) {
-	  if (r_debug)
+	  /* find coded function by name */
+	  /* search through function headers */
+	    for (f=cur_robot->code_list; f != (struct func *) 0; f=(struct func *)f->nextfunc) {
+	      if (r_debug)
             printf("\nfunc %s found %s\n",n,f->func_name);
 
-	  if (strcmp(f->func_name,n) == 0) {
-	    /* save next instruction pointer */
-	    if (--cur_robot->retptr == cur_robot->stackptr) {
-	      r_flag = 1;
+	      if (strcmp(f->func_name,n) == 0) {
+	      /* save next instruction pointer */
+	        if (--cur_robot->retptr == cur_robot->stackptr) {
+	          r_flag = 1;
+	        }
+	        i = (struct instr **) cur_robot->retptr;
+	        *i = (cur_robot->ip + 1);
+	        if (r_debug)
+              printf("\nsaving  return ip %ld\n",(int64_t)(cur_robot->ip + 1));
+
+	        /* save current local variable pointer */
+	        if (--cur_robot->retptr == cur_robot->stackptr) {
+	          r_flag = 1;
+	        }
+	        l = (int64_t **) cur_robot->retptr;
+	        *l = cur_robot->local;
+	        if (r_debug)
+              printf("\nsaving local pool %ld\n",(int64_t)cur_robot->local);
+
+	        /* setup new variable pool, if any */
+	        /* variable pool starts at the first of the current agruments */
+	        cur_robot->local = cur_robot->stackptr - f->par_count + 1;
+
+	        /* initialize all other local variables to zero */
+	        for (j = f->par_count; j <= f->var_count; j++)
+	          *(cur_robot->local + j) = 0L;
+
+	        /* set new stackptr just beyond the local variables */
+	        cur_robot->stackptr = cur_robot->local + f->var_count;
+
+	        /* check for collision into return stack */
+	        if (cur_robot->stackptr >= cur_robot->retptr) {
+	          r_flag = 1;
+	        }
+
+	        /* set new ip at start of module for next cycle */
+	        cur_robot->ip =(struct instr *) f->first;
+	        called = 1;
+
+	        break;
+
+	      }
 	    }
-	    i = (struct instr **) cur_robot->retptr;
-	    *i = (cur_robot->ip + 1);
-	    if (r_debug)
-              printf("\nsaving  return ip %ld\n",(long)(cur_robot->ip + 1));
 
-	    /* save current local variable pointer */
-	    if (--cur_robot->retptr == cur_robot->stackptr) {
-	      r_flag = 1;
-	    }
-	    l = (long **) cur_robot->retptr;
-	    *l = cur_robot->local;
-	    if (r_debug)
-              printf("\nsaving local pool %ld\n",(long)cur_robot->local);
-
-	    /* setup new variable pool, if any */
-	    /* variable pool starts at the first of the current agruments */
-	    cur_robot->local = cur_robot->stackptr - f->par_count + 1;
-
-	    /* initialize all other local variables to zero */
-	    for (j = f->par_count; j <= f->var_count; j++)
-	      *(cur_robot->local + j) = 0L;
-
-	    /* set new stackptr just beyond the local variables */
-	    cur_robot->stackptr = cur_robot->local + f->var_count;
-
-	    /* check for collision into return stack */
-	    if (cur_robot->stackptr >= cur_robot->retptr) {
-	      r_flag = 1;
-	    }
-
-	    /* set new ip at start of module for next cycle */
-	    cur_robot->ip = f->first;
-	    called = 1;
-
-	    break;
-
-	  }
-	}
-
-	if (!called) {
-	/* big trouble -- missing function */
-	cur_robot->ip++;
-	}
+	    if (!called) {
+	    /* big trouble -- missing function */
+	        cur_robot->ip++;
+        }
       }
 
       break;
@@ -216,39 +218,38 @@ void cycle()
       }
 
       /* restore previous local variable pool */
-      l = (long **) cur_robot->retptr++;
+      l = (int64_t **) cur_robot->retptr++;
       cur_robot->local = *l;
       if (r_debug)
-        printf("\nrestore local pool %ld\n",(long) cur_robot->local);
+        printf("\nrestore local pool %ld\n",(int64_t) cur_robot->local);
 
       /* restore next instruction pointer */
       i = (struct instr **) cur_robot->retptr++;
       cur_robot->ip = *i;
       if (r_debug)
-        printf("\nrestore ip %ld\n",(long) cur_robot->ip);
+        printf("\nrestore ip %ld\n",(int64_t) cur_robot->ip);
 
       /* re-frame stack to ensure we discard all expressions */
-      l = (long **) cur_robot->retptr++;
+      l = (int64_t **) cur_robot->retptr++;
       cur_robot->stackptr = *l;
       if (r_debug)
-        printf("\nrestore stack %ld\n",(long) cur_robot->stackptr);
+        printf("\nrestore stack %ld\n",(int64_t) cur_robot->stackptr);
 
       pop();		/* get rid of bogus function value */
       push(value);	/* place return value on stack */
-
       break;
 
 
     case BRANCH:	/* branch if tos == zero */
 
       if (pop() == 0L)
-	cur_robot->ip = cur_instr->u.br;
+	cur_robot->ip =(struct instr *) cur_instr->u.br;
       else
         cur_robot->ip++;
       break;
 
     case CHOP:		/* discard tos */
-      
+
       pop();
       cur_robot->ip++;
       break;
@@ -261,10 +262,10 @@ void cycle()
 	r_flag = 1;
       }
 
-      l = (long **) cur_robot->retptr;
+      l = (int64_t **) cur_robot->retptr;
       *l = cur_robot->stackptr;
       if (r_debug)
-        printf("\nsave frame %ld\n",(long)cur_robot->stackptr);
+        printf("\nsave frame %ld\n",(int64_t)cur_robot->stackptr);
 
       cur_robot->ip++;
       break;
@@ -323,16 +324,13 @@ void cycle()
     }
   }
 
-
 }
-     
+
 
 /* binaryop - pops 2 operands, performs operation, pushes result */
 /*            divide by zero handled by returning 0 */
 
-void binaryop(op)
-
-int op;
+void binaryop(int op)
 {
   long x,y;
 
@@ -490,16 +488,14 @@ int op;
 
 /* robot_go - start the robot pointed to by r */
 
-void robot_go(r)
-
-struct robot *r;
+void robot_go(struct robot *r)
 {
   register struct func *f;
   register int i;
-  
-  for (f = r->code_list; f != (struct func *) 0; f = f->nextfunc) {
+
+  for (f = r->code_list; f != (struct func *) 0; f =(struct func *) f->nextfunc) {
     if (strcmp(f->func_name,"main") == 0) {
-      r->ip = f->first;				/* start of code in main */
+      r->ip = (struct instr*)f->first;				/* start of code in main */
       for (i = 0; i < r->ext_count; i++)	/* zero externals */
 	*(r->external + i) = 0L;
       r->local = r->stackbase;			/* setup local variables */
@@ -515,17 +511,14 @@ struct robot *r;
 
 /* dumpvar - dump a variable pool or stack for length size */
 
-void dumpvar(pool,size)
-
-long *pool;
-int size;
+void dumpvar(int64_t *pool, int size)
 {
   register int i;
 
   for (i = 0; i < size; i++) {
     if (i % 3 == 0)
       printf("\n");
-    printf("%8ld: %8ld\t",(long)(pool + i),*(pool + i));
+    printf("%8ld: %8ld\t",(int64_t)(pool + i),*(pool + i));
   }
 
 }

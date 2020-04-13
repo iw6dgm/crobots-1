@@ -16,6 +16,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
+#include <time.h>
 
 /* INIT causes externals in crobots.h to have storage, & init intrinsic table */
 #define INIT 1
@@ -23,7 +25,7 @@
 
 #ifdef UNIX
 #include <signal.h>
-extern int catch_int();
+void catch_int();
 #endif
 
 
@@ -42,17 +44,15 @@ extern unsigned _stklen = 8000U;
 FILE *f_in;
 FILE *f_out;
 
-char *version   = "CROBOTS - version 1.1, PatchLevel3.4\n";
-char *copyright = "Copyright 1985-2007 by Tom Poindexter, All rights reserved.\n";
+char *version   = "CROBOTS - version 1.1, PatchLevel3.3\n";
+char *copyright = "Copyright 1985-2020 by Tom Poindexter, All rights reserved.\n";
 int garbage=0;
 
 char *nuxx="main";
 char *bpoint="";
 
 
-main(argc,argv)
-int argc;
-char *argv[];
+int main(int argc, char *argv[])
 {
   long limit = CYCLE_LIMIT;
   int matches = 0;
@@ -62,10 +62,8 @@ char *argv[];
   int num_robots = 0;
   char *files[MAXROBOTS];
   char *prog;
-  char *strrchr();   /* this is rindex in some compilers */
-  long atol();
-  long time();
-  void srand();
+// char *strrchr();   /* this is rindex in some compilers */
+//  long atol(char *);
 
   /* init robots */
   for (i = 0; i < MAXROBOTS; i++) {
@@ -194,16 +192,14 @@ char *argv[];
   /* all done */
   }
   exit(0);
+  return 0;
 
 }
 
 
 /* comp - only compile the files with full info */
 
-void comp(f,n)
-
-char *f[];
-int n;
+void comp(char *f[], int n)
 {
   int i;
   char outfile[256];
@@ -232,14 +228,15 @@ int n;
 	  strcpy(outfile,f[i]);
 	  strcat(outfile,"o");
 	  f_out=fopen(outfile,"wb");
-	  fwrite(&(robots[i].code),sizeof(long),1,f_out); /*questo Ã¨ un valore di offset*/
-	  fwrite(&(robots[i].ext_count),sizeof(int),1,f_out);
+	  fwrite(&(robots[i].code),sizeof(int64_t),1,f_out); /*questo è un valore di offset*/
+	  fwrite(&(robots[i].ext_count),sizeof(int32_t),1,f_out);
 	  fwrite(robots[i].funcs,ILEN,MAXSYM,f_out);
 	  fwrite(robots[i].code, sizeof(struct instr),CODESPACE,f_out);
+
 	  nextf=robots[i].code_list;
 	  while (nextf != (struct func *) 0) {
 		fwrite(nextf,sizeof(struct func),1,f_out);
-        nextf = nextf->nextfunc;
+        nextf = (struct func *)nextf->nextfunc;
 	  }
 	  fclose(f_out);
 	  fprintf(stdout,"\nSaved object robot: %s\n\n",outfile);
@@ -256,10 +253,7 @@ int n;
 
 /* play - watch the robots compete */
 
-void play(f,n)
-
-char *f[];
-int n;
+void play(char *f[], int n)
 {
   int num_robots = 0;
   int robotsleft;
@@ -268,7 +262,7 @@ int n;
   int i, j, k;
   long c = 0L;
   char *s;
-  char *strrchr();  /* this is rindex in some implementations */
+//  char *strrchr(char *, int);  /* this is rindex in some implementations */
 
   f_out = stdout;
   r_debug = 0;  /* turns off full compile info */
@@ -400,12 +394,7 @@ int n;
 
 /* match - run a series of matches */
 
-void match(m,l,f,n)
-
-int m;
-long l;
-char *f[];
-int n;
+void match(int m, long l, char *f[], int n)
 {
   int num_robots = 0;
   int robotsleft;
@@ -416,7 +405,7 @@ int n;
   int ties[MAXROBOTS];
   long c;
   char *s;
-  char *strrchr();  /* this is rindex in some implementations */
+//  char *strrchr(char *, char);  /* this is rindex in some implementations */
 
 #ifdef UNIX
   f_out = fopen("/dev/null","w");
@@ -485,27 +474,27 @@ int n;
     while (robotsleft > 1 && c < l) {
       robotsleft = 0;
       for (i = 0; i < num_robots; i++) {
-	if (robots[i].status == ACTIVE) {
-	  robotsleft++;
-	  cur_robot = &robots[i];
-	  cycle();
-	}
+	    if (robots[i].status == ACTIVE) {
+	      robotsleft++;
+	      cur_robot = &robots[i];
+	      cycle();
+	    }
       }
       if (--movement == 0) {
-	c += MOTION_CYCLES;
-	movement = MOTION_CYCLES;
-	move_robots(0);
-	move_miss(0);
+	    c += MOTION_CYCLES;
+	    movement = MOTION_CYCLES;
+	    move_robots(0);
+	    move_miss(0);
 #ifdef DOS
-	kbhit();  /* check keyboard so ctrl-break can work */
+	    kbhit();  /* check keyboard so ctrl-break can work */
 #endif
-	for (i = 0; i < num_robots; i++) {
-	  for (j = 0; j < MIS_ROBOT; j++) {
-	    if (missiles[i][j].stat == EXPLODING) {
-	      count_miss(i,j);
+	    for (i = 0; i < num_robots; i++) {
+	      for (j = 0; j < MIS_ROBOT; j++) {
+	        if (missiles[i][j].stat == EXPLODING) {
+	          count_miss(i,j);
+	        }
+	      }
 	    }
-	  }
-	}
       }
     }
 
@@ -513,18 +502,18 @@ int n;
     while (1) {
       k = 0;
       for (i = 0; i < num_robots; i++) {
-	for (j = 0; j < MIS_ROBOT; j++) {
-	  if (missiles[i][j].stat == FLYING) {
-	    k = 1;
-	  }
-	}
+	    for (j = 0; j < MIS_ROBOT; j++) {
+	      if (missiles[i][j].stat == FLYING) {
+	        k = 1;
+	      }
+	    }
       }
       if (k) {
-	move_robots(0);
-	move_miss(0);
+	    move_robots(0);
+	    move_miss(0);
       }
       else
-	break;
+	    break;
     }
 
     printf(" cycles = %ld:\n  Survivors:\n",c);
@@ -575,9 +564,7 @@ int n;
 
 /* trace - compile and run the robot in debug mode */
 
-void tracef(f)
-
-char *f;
+void tracef(char *f)
 {
   int c = 1;
 
@@ -629,9 +616,7 @@ char *f;
 
 
 /* init a robot */
-void init_robot(i)
-
-int i;
+void init_robot(int i)
 {
   register int j;
 
@@ -666,9 +651,7 @@ int i;
 
 /* free_robot - frees any allocated storage in a robot */
 
-void free_robot(i)
-
-int i;
+void free_robot(int i)
 {
   struct func *temp;
 
@@ -678,15 +661,15 @@ int i;
   if (robots[i].code != (struct instr *) 0)
     free(robots[i].code);
 
-  if (robots[i].external != (long *) 0)
+  if (robots[i].external != (int64_t *) 0)
     free(robots[i].external);
 
-  if (robots[i].stackbase != (long *) 0)
+  if (robots[i].stackbase != (int64_t *) 0)
     free(robots[i].stackbase);
 
   while (robots[i].code_list != (struct func *) 0) {
     temp = robots[i].code_list;
-    robots[i].code_list = temp->nextfunc;
+    robots[i].code_list =(struct func *) temp->nextfunc;
     free(temp);
   }
 
@@ -696,30 +679,29 @@ int i;
 /*           dependent on MAXROBOTS <= 4 */
 /*            put robots in separate quadrant */
 
-void rand_pos(n)
-
-int n;
+void rand_pos(int n)
 {
-  int i, k, s, r;
+  int i, k, startRob, effectiveRob;
   int quad[4];
 
   for (i = 0; i < 4; i++) {
     quad[i] = 0;
   }
-  s = rand() % n;
+
+  startRob = rand() % n;
   /* get a new quadrant */
   for (i = 0; i < n; i++) {
-      if (i == 3) {
-          k = 0;
-          while (quad[k] != 0) k++;
-      } else do {
-          k = rand() % 4;
-      } while (quad[k] != 0);
+	  if (i == 3) {
+		  k = 0;
+		  while (quad[k] != 0) k++;
+	  } else do {
+		  k = rand() % 4;
+	  } while (quad[k] != 0);
       quad[k] = 1;
-      r = (i + s) % n;
-    robots[r].org_x = robots[r].x =
+	  effectiveRob = (i + startRob) % n;
+	robots[effectiveRob].org_x = robots[effectiveRob].x =
        (rand() % (MAX_X * CLICK / 2)) + ((MAX_X * CLICK / 2) * (k%2));
-    robots[r].org_y = robots[r].y =
+    robots[effectiveRob].org_y = robots[effectiveRob].y =
        (rand() % (MAX_Y * CLICK / 2)) + ((MAX_Y * CLICK / 2) * (k<2));
   }
 }
@@ -731,7 +713,7 @@ int n;
 #ifdef UNIX
 /* catch_int - catch the interrupt signal and die, cleaning screen */
 
-catch_int()
+void catch_int()
 {
   int i;
 /*

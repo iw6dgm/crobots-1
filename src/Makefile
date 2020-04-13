@@ -4,7 +4,7 @@ OBJS =  ap.o main.o debug.o grammar.o lexanal.o compiler.o cpu.o intrins.o displ
 
 # Linux gcc flags: optimize(O) separate text and data(i)
 
-CFLAGS = -O4 -march=native -mtune=native -Dlinux -DUNIX
+CFLAGS = -O4 -march=native -mtune=native -Dwin64
 LIBS = -lm -lcurses
 
 #  Sembra che linkare -ltermcap sia inutile
