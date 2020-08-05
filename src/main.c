@@ -21,7 +21,7 @@
 #define INIT 1
 #include "crobots.h"
 
-#ifdef UNIX
+#if defined UNIX || defined MACOSX
 #include <signal.h>
 extern int catch_int();
 #endif
@@ -74,7 +74,7 @@ char *argv[];
   }
 
 
-#ifdef UNIX
+#if defined UNIX || defined MACOSX
   prog = argv[0];
 #else
   prog = "crobots";
@@ -287,7 +287,7 @@ int n;
     } else {
       fprintf(stdout,"\n %s compiled without errors\n",f[i]);
       /* get last part of file name */
-#ifdef UNIX
+#if defined UNIX || defined MACOSX
       s = strrchr(f[i],'/');
 #else
       if (*f[i]+1 == ':')   	/* drive specified? */
@@ -314,7 +314,7 @@ int n;
     exit(1);
   }
 
-#ifdef UNIX
+#if defined UNIX || defined MACOSX
   /* catch interrupt */
   /*if (signal(SIGINT,SIG_IGN) != SIG_IGN)
     signal(SIGINT,catch_int);*/
@@ -418,7 +418,7 @@ int n;
   char *s;
   char *strrchr();  /* this is rindex in some implementations */
 
-#ifdef UNIX
+#if defined UNIX || defined MACOSX
   f_out = fopen("/dev/null","w");
 #elif defined (__MSDOS__)
   f_out = stdin; /* e' una porcheria... ma funziona*/
@@ -444,7 +444,7 @@ int n;
     } else {
       if (!garbage) fprintf(stderr,"\n %s compiled without errors\n",f[i]);
       /* get last part of file name */
-#ifdef UNIX
+#if defined UNIX || defined MACOSX
       s = strrchr(f[i],'/');
 #else
       if (*f[i]+1 == ':')   	/* drive specified? */
@@ -728,7 +728,7 @@ int n;
 
 
 
-#ifdef UNIX
+#if defined UNIX || defined MACOSX
 /* catch_int - catch the interrupt signal and die, cleaning screen */
 
 catch_int()

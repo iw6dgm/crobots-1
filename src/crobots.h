@@ -11,8 +11,8 @@
 
 /* common defines */
 
-
-#define UNIX    1
+#define MACOSX 1
+/* #define UNIX    1*/
 /*#define __MSDOS__ 1*/
 /*#define bcc32 1*/
 
@@ -86,7 +86,7 @@ struct instr {			/* robot machine instruction */
     long var1;		/* variable offset, function offset, operator */
     struct instr *br;		/* false branch */
     struct {
-#ifdef UNIX
+#if defined UNIX || defined MACOSX
       long var2;		/* assignment variable offset */
       long a_op;		/* assignment operator */
 #else
@@ -227,7 +227,7 @@ struct intrin {
 ;
 
 /*definitions*/
-void ap_main();
+/*void ap_main();*/
 int poolsize(char *);
 long findvar(char *, char *);
 long allocvar(char *, char *);

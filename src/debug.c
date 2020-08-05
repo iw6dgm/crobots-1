@@ -37,7 +37,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#ifdef UNIX
+#if defined UNIX || defined MACOSX
 	#include <curses.h>
 	#define clreol clrtoeol
 		/* e qua come si fa? */
@@ -59,7 +59,12 @@ static int molt;
 
 extern long ritardo;
 extern char *bpoint;
+#if defined UNIX || defined MACOSX
+char buffer[2];
+#else
 extern char buffer[2];
+#endif
+
 static char *old[10000];
 extern char *nuxx;
 
@@ -122,7 +127,7 @@ void dlocal(char *name, long* pool1)
 
 	temp=funcfind(name);
 	if (strcmp(oldname,name)) {
-#ifdef linux
+#if defined UNIX || defined MACOSX || defined linux
 		getyx(stdscr,y,x);
 #else
 		y=wherey();
@@ -135,7 +140,7 @@ void dlocal(char *name, long* pool1)
 
 		i=0;
 		while((temp->vnames[i*ILEN])!='\0') {
-#ifdef linux
+#if defined UNIX || defined MACOSX || defined linux
 			getyx(stdscr,y,x);
 			if(x>70) printw("\n");
 #else
@@ -414,7 +419,7 @@ char c;
     printw("Robot Reset!!");
     move (LINES+2,col_1);
     printw("Press A");
-#ifndef UNIX
+#ifdef DOS
 	while(!kbhit());
 #endif
     do c=getch(); while ((c!='A')&&(c!='a'));

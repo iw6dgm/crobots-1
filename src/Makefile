@@ -1,10 +1,10 @@
 # makefile for crobots
 
-OBJS =  ap.o main.o debug.o grammar.o lexanal.o compiler.o cpu.o intrins.o display.o screen.o motion.o
+OBJS =  main.o grammar.o lexanal.o compiler.o cpu.o intrins.o display.o screen.o motion.o debug.o
 
-# Linux gcc flags: optimize(O) separate text and data(i)
+# Linux clang flags: optimize(O) separate text and data(i)
 
-CFLAGS = -O4 -march=native -mtune=native -Dlinux -DUNIX
+CFLAGS = -O3 -march=native -mtune=native -DMACOSX
 LIBS = -lm -lcurses
 
 #  Sembra che linkare -ltermcap sia inutile
@@ -22,45 +22,47 @@ LIBS = -lm -lcurses
 
 
 crobots: 	$(OBJS)
-		gcc -s $(CFLAGS) $(OBJS) -o crobots $(LIBS)
+		clang -s $(CFLAGS) $(OBJS) -o crobots $(LIBS)
 
 ap.o: 	ap.c
-		gcc $(CFLAGS) -c ap.c
+		clang $(CFLAGS) -c ap.c
 
 main.o: 	crobots.h main.c
-		gcc $(CFLAGS) -c main.c
+		clang $(CFLAGS) -c main.c
 
 grammar.o: 	crobots.h compiler.h grammar.y
 #		yacc -d grammar.y
 #		egrep -v '# line|^#$$' y.tab.c >grammar.c
 #		rm y.tab.c
 #		mv y.tab.h tokens.h
-		gcc $(CFLAGS) -c grammar.c
+		clang $(CFLAGS) -c grammar.c
 
 lexanal.o: 	crobots.h compiler.h lexanal.l grammar.y
 #		lex lexanal.l
 #		egrep -v '# ifdef|# endif' lex.yy.c >lexanal.c
 #		rm lex.yy.c
-		gcc $(CFLAGS) -c lexanal.c
+		clang $(CFLAGS) -c lexanal.c
 
 compiler.o: 	crobots.h compiler.h tokens.h compiler.c
-		gcc $(CFLAGS) -c compiler.c
+		clang $(CFLAGS) -c compiler.c
 	
 cpu.o: 		crobots.h grammar.y cpu.c
-		gcc $(CFLAGS) -c cpu.c
+		clang $(CFLAGS) -c cpu.c
 	
 intrins.o:	crobots.h intrins.c
-		gcc $(CFLAGS) -c intrins.c
+		clang $(CFLAGS) -c intrins.c
 	
 display.o:	crobots.h display.c
-		gcc $(CFLAGS) -c display.c
+		clang $(CFLAGS) -c display.c
 	
 screen.o:	crobots.h screen.c
-		gcc $(CFLAGS) -c screen.c
+		clang $(CFLAGS) -c screen.c
 
 screenx.o:	crobots.h screenx.c
-		gcc $(CFLAGS) -c screenx.c
+		clang $(CFLAGS) -c screenx.c
 	
 motion.o:	crobots.h motion.c
-		gcc $(CFLAGS) -c motion.c
-	
+		clang $(CFLAGS) -c motion.c
+
+debug.o:	crobots.h tokens.h debug.c
+		clang $(CFLAGS) -c debug.c

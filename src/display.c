@@ -20,7 +20,7 @@
 void update_disp()
 {
   register int i, j;
-  ap_main();
+  /*ap_main();*/
 
   /* plot each live robot and update status */
   for (i = 0; i < MAXROBOTS; i++) {

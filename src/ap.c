@@ -25,9 +25,12 @@
 #else
 #include <stdlib.h>
 #include <string.h>
+#endif
+#ifdef MACOSX
+#include <termios.h>
+#else
 #include <termio.h>
 #endif
-
 
 #define LATENCY 700000
 char buffer[2];

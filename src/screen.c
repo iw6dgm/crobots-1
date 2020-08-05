@@ -15,7 +15,7 @@
 #include "crobots.h"
 #include <curses.h>
 
-#ifdef UNIX  /* anche se e' ovvio...*/
+#if defined UNIX || defined MACOSX
 int LINEE=21;
 #endif
 
