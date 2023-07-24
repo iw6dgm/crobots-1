@@ -13,6 +13,7 @@
 
 #include "crobots.h"
 #include <math.h>
+#include <stdlib.h>
 
 /* define long absolute value function */
 #define labs(l) ((long) l < 0L ? -l : l)

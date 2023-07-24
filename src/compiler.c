@@ -12,6 +12,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <ctype.h>
 
 #include "crobots.h"
 /* EXT causes externals to be declared without extern keyword in compiler.h */
@@ -49,7 +50,7 @@ void loadrobot(char *robotname)
 		}
 		f_in = fopen(robotname,"rb");
 
-		fread(&myoffset,sizeof(long),1,f_in); /*questo è un valore di offset*/
+		fread(&myoffset,sizeof(long),1,f_in); /*questo ï¿½ un valore di offset*/
 		fread(&(cur_robot->ext_count),sizeof(int),1,f_in);
 		cur_robot->external = (long *) malloc(cur_robot->ext_count * sizeof(long));
 
